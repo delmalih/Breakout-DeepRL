@@ -1,5 +1,6 @@
 gym
 numpy
+keras
 atari-py
 tensorflow
 scikit-video

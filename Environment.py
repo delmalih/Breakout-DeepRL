@@ -19,6 +19,7 @@ class Environment(object):
     def reset(self):
         self.__video = []
         self.__env.reset()
+        return self.get_current_state()
 
     def step(self, action):
         self.__video.append(self.get_current_state())

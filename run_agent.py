@@ -24,6 +24,15 @@ def parse_args():
     parser.add_argument(
         "-o", "--output_path", dest="output_path",
         help="Path to save videos", required=True)
+    parser.add_argument(
+        "--train", action="store_true",
+        help="Whether to train the agent or not")
+    parser.add_argument(
+        "--n_epochs", dest="n_epochs", default=20, type=int,
+        help="Number of training epochs (default: 20)")
+    parser.add_argument(
+        "--batch_size", dest="batch_size", default=32, type=int,
+        help="Training batch size (default: 32)")
     return parser.parse_args()
 
 
@@ -35,23 +44,6 @@ def get_agent(args, env):
     return RandomAgent(env)
 
 
-def test_agent(agent, env, epochs, output_path=''):
-    total_score = 0
-    for e in range(epochs):
-        score = 0
-        env.reset()
-        state = env.get_current_state()
-        done = False
-        while not done:
-            action = agent.act(state)
-            state, reward, done, _ = env.step(action)
-            score += reward
-        env.draw_video(output_path + str(e))
-        total_score += score
-        print("Epoch = {:4d} | Current score = {:.2f}".format(e, score))
-    print("Average score: {}".format(1. * total_score / epochs))
-
-
 ########
 # Main #
 ########
@@ -60,4 +52,7 @@ if __name__ == "__main__":
     args = parse_args()
     env = Environment()
     agent = get_agent(args, env)
-    test_agent(agent, env, args.epochs, output_path=args.output_path)
+    if args.train:
+        agent.train(n_epochs=args.n_epochs, batch_size=args.batch_size)
+    else:
+        agent.play(args.epochs, output_path=args.output_path)

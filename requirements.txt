@@ -1,0 +1,5 @@
+gym
+numpy
+atari-py
+tensorflow
+scikit-video

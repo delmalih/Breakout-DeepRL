@@ -93,12 +93,10 @@ class CNNAgent(BaselineAgent):
                 score += reward
                 loss = self.reinforce(state, next_state, action, reward, done)
                 state = next_state
-                print(info["ale.lives"])
                 if n_lives != info["ale.lives"]:
                     n_lives = info["ale.lives"]
-
-                print("Epoch {:03d}/{:03d} - {} lives | Loss {:.4f} | Score {}"
-                      .format(e, n_lives, n_epochs, loss, score))
+                    print("Epoch {:03d}/{:03d} - {} lives | Loss {:.4f} | \
+                           Score {}".format(e, n_epochs, n_lives, loss, score))
 
             self.__env.draw_video(output_path + "/" + str(e))
             self.save(name_weights=output_path + 'model.h5',

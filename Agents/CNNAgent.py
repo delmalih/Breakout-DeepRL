@@ -18,6 +18,7 @@ from Memory import Memory
 
 class CNNAgent(BaselineAgent):
     def __init__(self, env, epsilon=0.1, memory_size=100, discount=0.9):
+        super().__init__(env, epsilon=epsilon)
         self.__env = env
         self.__epsilon = epsilon
         self.__memory = Memory(memory_size)

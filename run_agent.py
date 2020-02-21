@@ -4,6 +4,7 @@
 
 import argparse
 from Agents.RandomAgent import RandomAgent
+from Agents.CNNAgent import CNNAgent
 from Environment import Environment
 
 
@@ -29,6 +30,8 @@ def parse_args():
 def get_agent(args, env):
     if args.agent == "Random":
         return RandomAgent(env)
+    if args.agent == "CNN":
+        return CNNAgent(env)
     return RandomAgent(env)
 
 
@@ -36,7 +39,8 @@ def test_agent(agent, env, epochs, output_path=''):
     total_score = 0
     for e in range(epochs):
         score = 0
-        state = env.reset()
+        env.reset()
+        state = env.get_current_state()
         done = False
         while not done:
             action = agent.act(state)

@@ -43,11 +43,8 @@ class Environment(object):
             self.__video,
         )
 
-# def convert_video(self, output_path):
-#     video = io.open("{}.mp4".format(output_path), 'r+b').read()
-#     encoded = base64.b64encode(video)
-#     html = '''<video alt="test" controls>
-#                 <source src="data:video/mp4;base64,{0}" type="video/mp4" />
-#             </video>'''.format(encoded.decode('ascii'))
-#     with open("{}.html".format(output_path), "w") as f:
-#         f.write(html)
+    def get_number_of_actions(self):
+        return len(self.__env.env.ale.getMinimalActionSet())
+
+    def get_state_shape(self):
+        return self.get_current_state().shape

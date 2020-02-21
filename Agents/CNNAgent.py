@@ -2,18 +2,21 @@
 # Import #
 ##########
 
+import sys
 import json
 import numpy as np
-from keras.models import model_from_json
+from tensorflow import keras
+from tensorflow.keras.models import model_from_json
 from .BaselineAgent import BaselineAgent
-from ..Memory import Memory
+sys.path.append("..")
+from Memory import Memory
 
 
 #############
-# DQL Class #
+# CNN Class #
 #############
 
-class DQLAgent(BaselineAgent):
+class CNNAgent(BaselineAgent):
     def __init__(self, env, epsilon=0.1, memory_size=100, batch_size=16,
                  discount=0.99):
         self.__env = env
@@ -21,9 +24,19 @@ class DQLAgent(BaselineAgent):
         self.__memory = Memory(memory_size)
         self.__batch_size = batch_size
         self.__discount = 0.99
+        self.create_model()
+
+    def create_model(self):
+        nA = self.__env.get_number_of_actions()
+        input_model = keras.layers.Input(shape=self.__env.get_state_shape())
+        vgg = keras.applications.VGG16(include_top=False)
+        encodings = keras.layers.Flatten()(vgg(input_model))
+        output_model = keras.layers.Dense(nA)(encodings)
+        self.__model = keras.models.Model(input_model, output_model)
+        self.__model.compile(optimizer="adam", loss="mse")
 
     def learned_act(self, state):
-        q_values = self.model.predict(np.array([state]))[0]
+        q_values = self.__model.predict(np.array([state]))[0]
         return np.argmax(q_values)
 
     def reinforce(self, state, next_state, action, reward, done):

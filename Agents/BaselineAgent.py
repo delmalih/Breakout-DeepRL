@@ -38,7 +38,7 @@ class BaselineAgent(object):
                 action = self.act(state)
                 state, reward, done, _ = self.__env.step(action)
                 score += reward
-            self.__env.draw_video(output_path + str(e))
+            self.__env.draw_video(output_path + "/" + str(e))
             total_score += score
             print("Epoch = {:4d} | Current score = {:.2f}".format(e, score))
         print("Average score: {}".format(1. * total_score / epochs))

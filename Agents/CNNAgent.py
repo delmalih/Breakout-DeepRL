@@ -81,8 +81,8 @@ class CNNAgent(BaselineAgent):
         self.__model = model
 
     def train(self, n_epochs=20, batch_size=32, output_path=""):
-        score = 0
         loss = 0
+        score = 0
         for e in range(n_epochs):
             state = self.__env.reset()
             done = False
@@ -91,7 +91,8 @@ class CNNAgent(BaselineAgent):
                 next_state, reward, done, _ = self.__env.step(action)
                 score += reward
                 loss = self.reinforce(state, next_state, action, reward, done)
-            self.__env.draw_video(output_path + str(e))
+                state = next_state
+            self.__env.draw_video(output_path + "/" + str(e))
             print("Epoch {:03d}/{:03d} | Loss {:.4f} | Score {}".format(
                 e, n_epochs, loss, score))
             self.save(name_weights=output_path + 'model.h5',

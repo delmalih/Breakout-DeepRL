@@ -93,6 +93,7 @@ class CNNAgent(BaselineAgent):
                 score += reward
                 loss = self.reinforce(state, next_state, action, reward, done)
                 state = next_state
+                print(info)
                 if lives != info["ale.lives"]:
                     lives = info["ale.lives"]
 

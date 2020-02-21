@@ -95,6 +95,7 @@ class CNNAgent(BaselineAgent):
                 state = next_state
                 if n_lives != info["ale.lives"]:
                     n_lives = info["ale.lives"]
+                    state, _, _, _ = self.__env.step(1)
                 print("Epoch {:03d}/{:03d} - {} lives | Loss {:.4f} | Score {}"
                       .format(e, n_epochs, n_lives, loss, score))
 

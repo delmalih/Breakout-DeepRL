@@ -88,10 +88,10 @@ class CNNAgent(BaselineAgent):
             done = False
             while not done:
                 action = self.act(state)
-                next_state, reward, done, _ = self.__env.step(action)
+                next_state, reward, done, info = self.__env.step(action)
                 score += reward
                 loss = self.reinforce(state, next_state, action, reward, done)
-                print(done, np.linalg.norm(next_state - state))
+                print(done, reward, info, np.linalg.norm(next_state - state))
                 state = next_state
             self.__env.draw_video(output_path + "/" + str(e))
             print("Epoch {:03d}/{:03d} | Loss {:.4f} | Score {}".format(

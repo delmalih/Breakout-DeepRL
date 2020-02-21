@@ -23,9 +23,8 @@ class Environment(object):
         return self.get_current_state()
 
     def step(self, action):
-        action_converter = {0: 0, 1: 3, 2: 4}
         self.__video.append(self.get_current_state())
-        return self.__env.step(action_converter[action])
+        return self.__env.step(action)
 
     def render(self):
         self.__env.render()

@@ -85,16 +85,20 @@ class CNNAgent(BaselineAgent):
         score = 0
         for e in range(n_epochs):
             state = self.__env.reset()
+            lives = 5
             done = False
             while not done:
                 action = self.act(state)
                 next_state, reward, done, info = self.__env.step(action)
                 score += reward
                 loss = self.reinforce(state, next_state, action, reward, done)
-                print(done, reward, info, np.linalg.norm(next_state - state))
                 state = next_state
+                if lives != info["ale.lives"]:
+                    lives = info["ale.lives"]
+
+                print("Epoch {:03d}/{:03d} - {} lives | Loss {:.4f} | Score {}"
+                      .format(e, lives, n_epochs, loss, score))
+
             self.__env.draw_video(output_path + "/" + str(e))
-            print("Epoch {:03d}/{:03d} | Loss {:.4f} | Score {}".format(
-                e, n_epochs, loss, score))
             self.save(name_weights=output_path + 'model.h5',
                       name_model=output_path + 'model.json')

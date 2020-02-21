@@ -53,6 +53,7 @@ if __name__ == "__main__":
     env = Environment()
     agent = get_agent(args, env)
     if args.train:
-        agent.train(n_epochs=args.n_epochs, batch_size=args.batch_size)
+        agent.train(n_epochs=args.n_epochs, batch_size=args.batch_size,
+                    output_path=args.output_path)
     else:
         agent.play(args.epochs, output_path=args.output_path)

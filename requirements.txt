@@ -4,3 +4,4 @@ keras
 atari-py
 tensorflow
 scikit-video
+git+git://github.com:grantsrb/Gym-Snake.git

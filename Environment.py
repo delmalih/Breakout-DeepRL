@@ -3,6 +3,7 @@
 ###########
 
 import gym
+import gym_snake
 import skvideo.io
 import numpy as np
 
@@ -13,18 +14,20 @@ import numpy as np
 
 class Environment(object):
     def __init__(self):
-        self.__env = gym.make('Breakout-v0')
+        self.__env = gym.make("snake-v0")
         self.reset()
 
     def reset(self):
-        self.__video = []
-        self.__env.reset()
-        self.__env.step(1)
-        return self.get_current_state()
+        self.__env.unit_gap = 0
+        state = self.__env.reset()
+        self.__video = [state]
+        return state
 
     def step(self, action):
-        self.__video.append(self.get_current_state())
-        return self.__env.step(action)
+        action = int(action)
+        state, reward, done, info = self.__env.step(action)
+        self.__video.append(state)
+        return state, reward, done, info
 
     def render(self):
         self.__env.render()
@@ -35,9 +38,6 @@ class Environment(object):
     def sample_action(self):
         return self.__env.action_space.sample()
 
-    def get_current_state(self):
-        return self.__env.env.ale.getScreenRGB()
-
     def draw_video(self, output_path):
         self.__video = np.array(self.__video)
         skvideo.io.vwrite(
@@ -46,7 +46,7 @@ class Environment(object):
         )
 
     def get_number_of_actions(self):
-        return len(self.__env.env.ale.getMinimalActionSet())
+        return self.__env.action_space.shape[0]
 
     def get_state_shape(self):
-        return self.get_current_state().shape
+        return self.__video[0].shape

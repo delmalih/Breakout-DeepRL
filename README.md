@@ -1,1 +1,1 @@
-# Breakout-DeepRL
+# Snake-DeepRL

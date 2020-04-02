@@ -107,7 +107,6 @@ class CNNAgent(BaselineAgent):
 
             target_q[i] = input_qs_list[i]
             target_q[i, action] = target_q_value
-            print(target_q - input_qs_list)
         
         self.__optimizer.zero_grad()
         target_q = torch.clamp(target_q, -3, 3)

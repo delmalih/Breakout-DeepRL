@@ -79,7 +79,7 @@ class CNNAgent(BaselineAgent):
         if self.__train:
             nA = self.__env.get_number_of_actions()
             self.__model = DQNet(nA)
-            self.__optimizer = optim.Adam(self.__model.parameters(), lr=0.0005)
+            self.__optimizer = optim.Adam(self.__model.parameters(), lr=0.001)
             self.__criterion = nn.MSELoss()
         else:
             self.load()

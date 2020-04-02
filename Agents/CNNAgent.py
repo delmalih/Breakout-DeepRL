@@ -129,7 +129,7 @@ class CNNAgent(BaselineAgent):
             done = False
             score = 0
             while not done:
-                action = self.act(state)
+                action = self.act(state, is_training=True)
                 next_state, reward, done, info = self.__env.step(action)
                 score += reward
                 loss = self.reinforce(state, next_state, action, reward, done)

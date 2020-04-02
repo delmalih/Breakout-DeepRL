@@ -28,11 +28,11 @@ def parse_args():
         "--train", action="store_true",
         help="Whether to train the agent or not")
     parser.add_argument(
-        "--n_epochs", dest="n_epochs", default=20, type=int,
-        help="Number of training epochs (default: 20)")
-    parser.add_argument(
         "--batch_size", dest="batch_size", default=32, type=int,
         help="Training batch size (default: 32)")
+    parser.add_argument(
+        "--model_path", dest="model_path", default="./tmp/model.pth",
+        help="Model path for the CNN agent (default: ./tmp/model.pth)")
     return parser.parse_args()
 
 
@@ -40,7 +40,7 @@ def get_agent(args, env):
     if args.agent == "Random":
         return RandomAgent(env)
     if args.agent == "CNN":
-        return CNNAgent(env)
+        return CNNAgent(env, args.model_path, train=args.train)
     return RandomAgent(env)
 
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     env = Environment()
     agent = get_agent(args, env)
     if args.train:
-        agent.train(n_epochs=args.n_epochs, batch_size=args.batch_size,
+        agent.train(n_epochs=args.epochs, batch_size=args.batch_size,
                     output_path=args.output_path)
     else:
         agent.play(args.epochs, output_path=args.output_path)

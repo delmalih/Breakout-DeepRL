@@ -2,6 +2,7 @@
 # Imports #
 ###########
 
+
 import numpy as np
 
 
@@ -32,8 +33,8 @@ class BaselineAgent(object):
         total_score = 0
         for e in range(epochs):
             score = 0
-            state = self.__env.reset()
             done = False
+            state = self.__env.reset()
             while not done:
                 action = self.act(state)
                 state, reward, done, _ = self.__env.step(action)

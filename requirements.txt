@@ -1,6 +1,4 @@
 gym
 numpy
-keras
-atari-py
-tensorflow
+torch
 scikit-video

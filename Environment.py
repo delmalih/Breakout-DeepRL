@@ -2,6 +2,7 @@
 # Imports #
 ###########
 
+
 import gym
 import gym_snake
 import skvideo.io
@@ -39,14 +40,18 @@ class Environment(object):
         return self.__env.action_space.sample()
 
     def draw_video(self, output_path):
-        self.__video = np.array(self.__video)
-        skvideo.io.vwrite(
-            "{}.mp4".format(output_path),
-            self.__video,
-        )
+        self.__video = np.array(self.__video, dtype=np.uint8)
+        writer = skvideo.io.FFmpegWriter("{}.mp4".format(output_path))
+        for frame in self.__video:
+            for _ in range(3):
+                writer.writeFrame(frame)
+        writer.close()
 
     def get_number_of_actions(self):
         return self.__env.action_space.shape[0]
 
     def get_state_shape(self):
         return self.__video[0].shape
+
+    def get_video(self):
+        return self.__video

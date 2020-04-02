@@ -102,7 +102,7 @@ class CNNAgent(BaselineAgent):
         new_states = torch.Tensor([values[1] / 255. for values in minibatch]).permute(0, 3, 1, 2).to(self.__device)
         input_qs_list = self.__model(input_states)
         future_qs_list = self.__model(new_states)
-        target_q = torch.zeros((batch_size, self.__env.get_number_of_actions()))
+        target_q = torch.zeros((batch_size, self.__env.get_number_of_actions())).to(self.__device)
 
         for i, mem_item in enumerate(minibatch):
             _, _, action, reward, done = mem_item

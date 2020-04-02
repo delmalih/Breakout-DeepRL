@@ -60,7 +60,6 @@ class DQNet(nn.Module):
         x = self.conv_layers(x)
         x = x.view(x.size(0), -1)
         x = self.fc_layers(x)
-        x = F.softmax(x)
         return x
 
 
@@ -116,6 +115,7 @@ class CNNAgent(BaselineAgent):
             target_q[i, action] = target_q_value
         
         self.__optimizer.zero_grad()
+        target_q = torch.clamp(target_q, -3, 3)
         output_q = self.__model(input_states)
         loss = self.__criterion(output_q, target_q)
         loss.backward()

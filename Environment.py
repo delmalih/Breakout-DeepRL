@@ -29,6 +29,7 @@ class Environment(object):
         state, reward, done, info = self.__env.step(action)
         if reward == -1:
             done = True
+            reward = -3
         self.__video.append(state)
         return state, reward, done, info
 

@@ -44,22 +44,16 @@ class DQNet(nn.Module):
             nn.BatchNorm2d(512),
             nn.LeakyReLU(0.2),
             nn.MaxPool2d(2),                             # 2 x 2 x 512
-            nn.Conv2d(512, 512, 3, padding=1),           # 2 x 2 x 512
-            nn.BatchNorm2d(512),
-            nn.LeakyReLU(0.2),
-            nn.MaxPool2d(2),                             # 1 x 1 x 512
         )
         self.fc_layers = nn.Sequential(
-            nn.Linear(512, 512),
-            nn.LeakyReLU(0.2),
-            nn.Dropout(0.4),
-            nn.Linear(512, n_actions),
+            nn.Linear(2048, n_actions),
         )
 
     def forward(self, x):
         x = self.conv_layers(x)
         x = x.view(x.size(0), -1)
         x = self.fc_layers(x)
+        x = torch.clamp(x, -3, 3)
         return x
 
 
@@ -98,13 +92,13 @@ class CNNAgent(BaselineAgent):
         
         minibatch = [self.__memory.random_access() for i in range(batch_size)]
         input_states = torch.Tensor([values[0] / 255. for values in minibatch]).permute(0, 3, 1, 2).to(self.__device)
-        new_states = torch.Tensor([values[1] / 255. for values in minibatch]).permute(0, 3, 1, 2).to(self.__device)
+        next_states = torch.Tensor([values[1] / 255. for values in minibatch]).permute(0, 3, 1, 2).to(self.__device)
         input_qs_list = self.__model(input_states)
-        future_qs_list = self.__model(new_states)
+        future_qs_list = self.__model(next_states)
         target_q = torch.zeros((batch_size, self.__env.get_number_of_actions())).to(self.__device)
 
         for i, mem_item in enumerate(minibatch):
-            _, _, action, reward, done = mem_item
+            s, ns, action, reward, done = mem_item
             if done:
                 target_q_value = reward
             else:
@@ -113,6 +107,7 @@ class CNNAgent(BaselineAgent):
 
             target_q[i] = input_qs_list[i]
             target_q[i, action] = target_q_value
+            print(target_q - input_qs_list)
         
         self.__optimizer.zero_grad()
         target_q = torch.clamp(target_q, -3, 3)

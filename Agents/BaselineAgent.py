@@ -21,7 +21,8 @@ class BaselineAgent(object):
     def act(self, state, is_training=False):
         if is_training:
             if np.random.rand() <= self.__epsilon:
-                a = np.random.randint(0, self.__env.nA, size=1)[0]
+                nA = self.__env.get_number_of_actions()
+                a = np.random.randint(0, nA, size=1)[0]
             else:
                 a = self.learned_act(state)
         else:

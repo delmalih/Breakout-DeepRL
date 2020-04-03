@@ -11,16 +11,15 @@ import numpy as np
 ###############
 
 class BaselineAgent(object):
-    def __init__(self, env, epsilon=0.1):
+    def __init__(self, env):
         self.__env = env
-        self.set_epsilon(epsilon)
-
-    def set_epsilon(self, epsilon):
-        self.__epsilon = epsilon
+    
+    def set_epsilon(self, eps):
+        self.epsilon = eps
 
     def act(self, state, is_training=False):
         if is_training:
-            if np.random.rand() <= self.__epsilon:
+            if np.random.rand() <= self.epsilon:
                 a = self.__env.sample_action()
             else:
                 a = self.learned_act(state)

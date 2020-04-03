@@ -52,15 +52,16 @@ class DQNet(nn.Module):
 
 
 class CNNAgent(BaselineAgent):
-    def __init__(self, env, model_path, epsilon=0.1, memory_size=100, discount=0.9, train=False):
-        super().__init__(env, epsilon=epsilon)
+    def __init__(self, env, model_path,  memory_size=100, discount=0.9, train=False, eps_start=0.9, eps_decay=0.99):
+        super().__init__(env)
         self.__env = env
-        self.__epsilon = epsilon
         self.__memory = Memory(memory_size)
         self.__discount = discount
         self.__device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         self.__train = train
         self.__model_path = model_path
+        self.__eps_decay = eps_decay
+        self.set_epsilon(eps_start)
         self.create_model()
 
     def create_model(self):
@@ -122,10 +123,11 @@ class CNNAgent(BaselineAgent):
                 score += reward
                 loss = self.reinforce(state, next_state, action, reward, done)
                 state = next_state
-                print("Epoch {:03d}/{:03d} | Loss {:.4f} | Score {}"
-                      .format(e, n_epochs, loss, score))
+                print("Epoch {:03d}/{:03d} | Loss {:.4f} | Epsilon = {:.4f} | Score {}"
+                      .format(e, n_epochs, loss, self.epsilon, score))
             self.__env.draw_video(output_path + "/" + str(e))
             self.save()
+            self.set_epsilon(self.epsilon * self.__eps_decay)
 
     def save(self):
         torch.save(self.__model, self.__model_path)

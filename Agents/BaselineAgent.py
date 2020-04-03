@@ -21,8 +21,7 @@ class BaselineAgent(object):
     def act(self, state, is_training=False):
         if is_training:
             if np.random.rand() <= self.__epsilon:
-                nA = self.__env.get_number_of_actions()
-                a = np.random.randint(0, nA, size=1)[0]
+                a = self.__env.sample_action()
             else:
                 a = self.learned_act(state)
         else:
@@ -42,7 +41,7 @@ class BaselineAgent(object):
                 score += reward
             self.__env.draw_video(output_path + "/" + str(e))
             total_score += score
-            print("Epoch = {:4d} | Current score = {:.2f}".format(e, score))
+            print("Epoch = {:06d} | Current score = {:2.2f} | N Steps = {:06d}".format(e, score, len(self.__env.get_video())))
         print("Average score: {}".format(1. * total_score / epochs))
 
     def learned_act(self, state):

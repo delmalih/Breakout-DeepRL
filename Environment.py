@@ -14,7 +14,7 @@ import numpy as np
 
 
 class Environment(object):
-    def __init__(self, game_width=10, game_height=10, initial_length=2):
+    def __init__(self, game_width=30, game_height=30, initial_length=2):
         self.__game_width = game_width
         self.__game_height = game_height
         self.__initial_length = initial_length
@@ -76,7 +76,6 @@ class Environment(object):
         # 0 --> TURN 0° || 1 --> TURN 90° || 2 --> TURN -90°
         action = int(action)
         reward, done = self.apply_action(action)
-        plt.imshow(state); plt.show()
         self.__video.append(state)
         return state, reward, done, {}
     

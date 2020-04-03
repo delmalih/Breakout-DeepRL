@@ -76,6 +76,7 @@ class Environment(object):
         # 0 --> TURN 0° || 1 --> TURN 90° || 2 --> TURN -90°
         action = int(action)
         reward, done = self.apply_action(action)
+        state = self.draw()
         self.__video.append(state)
         return state, reward, done, {}
     

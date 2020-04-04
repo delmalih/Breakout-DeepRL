@@ -32,15 +32,15 @@ class DQNet(nn.Module):
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(2),                             # 2 x 2 x 64
-            nn.Conv2d(64, 128, 3, padding=1),            # 2 x 2 x 128
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.MaxPool2d(2),                             # 1 x 1 x 128
+            # nn.Conv2d(64, 128, 3, padding=1),            # 2 x 2 x 128
+            # nn.BatchNorm2d(128),
+            # nn.ReLU(),
+            # nn.MaxPool2d(2),                             # 1 x 1 x 128
         )
         self.fc_layers = nn.Sequential(
-            nn.Linear(128, 128),
+            nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(128, n_actions),
+            nn.Linear(64, n_actions),
         )
 
     def forward(self, x):

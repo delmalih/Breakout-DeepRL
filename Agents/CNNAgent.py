@@ -20,18 +20,18 @@ class DQNet(nn.Module):
     def __init__(self, n_actions):
         super(DQNet, self).__init__()
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(1, 16, 3, padding=1),              # 16 x 16 x 16
+            nn.Conv2d(3, 16, 3, padding=1),              # 16 x 16 x 16
             nn.LeakyReLU(0.1),
-            nn.MaxPool2d(2),                             # 8 x 8 x 16
+            nn.Conv2d(16, 16, 3, padding=1, stride=2),   # 8 x 8 x 16
             nn.Conv2d(16, 32, 3, padding=1),             # 8 x 8 x 32
             nn.LeakyReLU(0.1),
-            nn.MaxPool2d(2),                             # 4 x 4 x 32
+            nn.Conv2d(32, 32, 3, padding=1, stride=2),   # 4 x 4 x 32
             nn.Conv2d(32, 64, 3, padding=1),             # 4 x 4 x 64
             nn.LeakyReLU(0.1),
-            nn.MaxPool2d(2),                             # 2 x 2 x 64
+            nn.Conv2d(64, 64, 3, padding=1, stride=2),   # 2 x 2 x 64
             nn.Conv2d(64, 128, 3, padding=1),            # 2 x 2 x 128
             nn.LeakyReLU(0.1),
-            nn.MaxPool2d(2),                             # 1 x 1 x 128
+            nn.Conv2d(128, 128, 3, padding=1, stride=2), # 1 x 1 x 128
         )
         self.fc_layers = nn.Sequential(
             nn.Linear(128, 128),
@@ -76,7 +76,7 @@ class CNNAgent(BaselineAgent):
             probabilities = F.softmax(logits, dim=-1)[0].detach().cpu().numpy()
         return np.random.choice(list(range(self.__env.get_number_of_actions())), p=probabilities)
 
-    def reinforce(self, state, next_state, action, reward, done, batch_size=32):
+    def reinforce(self, state, next_state, action, reward, done, batch_size):
         self.__memory.remember([state, next_state, action, reward, done])
         if self.__memory.get_memory_size() < batch_size:
             return 0.0
@@ -104,7 +104,7 @@ class CNNAgent(BaselineAgent):
         self.__optimizer.step()
         return loss.item()
 
-    def train(self, n_epochs=20, batch_size=32, output_path="./tmp"):
+    def train(self, n_epochs, batch_size, output_path="./tmp"):
         for e in range(n_epochs):
             state = self.__env.reset()
             done = False
@@ -115,7 +115,7 @@ class CNNAgent(BaselineAgent):
                 action = self.act(state, is_training=True)
                 next_state, reward, done, info = self.__env.step(action)
                 score += reward
-                loss += self.reinforce(state, next_state, action, reward, done)
+                loss += self.reinforce(state, next_state, action, reward, done, batch_size)
                 number_steps += 1
                 state = next_state
             loss /= number_steps

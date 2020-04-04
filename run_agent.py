@@ -28,8 +28,8 @@ def parse_args():
         "--train", action="store_true",
         help="Whether to train the agent or not")
     parser.add_argument(
-        "--batch_size", dest="batch_size", default=32, type=int,
-        help="Training batch size (default: 32)")
+        "--batch_size", dest="batch_size", default=512, type=int,
+        help="Training batch size (default: 512)")
     parser.add_argument(
         "--model_path", dest="model_path", default="./tmp/model.pth",
         help="Model path for the CNN agent (default: ./tmp/model.pth)")

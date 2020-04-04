@@ -59,13 +59,13 @@ class Environment(object):
         self.__snake_heading = [np.array((1, 0)), np.array((0, 1)), np.array((-1, 0)), np.array((0, -1))][np.random.randint(0, 4)]
 
     def draw(self):
-        state = np.zeros((self.__game_height, self.__game_width, 1))
-        state[self.__food_coordinates] = .9
+        state = np.zeros((self.__game_height, self.__game_width, 3))
+        state[self.__food_coordinates] = (0., 0., 1.)
         for snake_coords in self.__snake_coordinates:
             if snake_coords[0] >= 0 and snake_coords[0] < state.shape[0] and snake_coords[1] >= 0 and snake_coords[1] < state.shape[1]:
-                state[snake_coords[0], snake_coords[1]] = .5
+                state[snake_coords[0], snake_coords[1]] = (1., 0., 0.)
         if self.__snake_coordinates[0][0] >= 0 and self.__snake_coordinates[0][0] < state.shape[0] and self.__snake_coordinates[0][1] >= 0 and self.__snake_coordinates[0][1] < state.shape[1]:
-            state[self.__snake_coordinates[0][0], self.__snake_coordinates[0][1]] = 1.
+            state[self.__snake_coordinates[0][0], self.__snake_coordinates[0][1]] = (1., 0., 0.)
         return state
 
     def step(self, action):
@@ -89,7 +89,7 @@ class Environment(object):
             self.generate_food()
             done = self.add_cell_to_snake()
         elif self.is_game_done():
-            reward = -100
+            reward = -10
             done = True
         return reward, done
 

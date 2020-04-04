@@ -10,7 +10,7 @@ import numpy as np
 ################
 
 class Memory(object):
-    def __init__(self, max_memory=100):
+    def __init__(self, max_memory=100000):
         self.__max_memory = max_memory
         self.__memory = list()
 

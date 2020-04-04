@@ -20,7 +20,7 @@ class DQNet(nn.Module):
     def __init__(self, n_actions):
         super(DQNet, self).__init__()
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(3, 16, 3, padding=1),              # 16 x 16 x 16
+            nn.Conv2d(1, 16, 3, padding=1),              # 16 x 16 x 16
             nn.BatchNorm2d(16),
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),                             # 8 x 8 x 16
@@ -47,12 +47,11 @@ class DQNet(nn.Module):
         x = self.conv_layers(x)
         x = x.view(x.size(0), -1)
         x = self.fc_layers(x)
-        x = torch.clamp(x, -3, 3)
         return x
 
 
 class CNNAgent(BaselineAgent):
-    def __init__(self, env, model_path,  memory_size=100, discount=0.9, train=False, eps_start=0.9, eps_decay=0.99):
+    def __init__(self, env, model_path,  memory_size=100, discount=0.9, train=False, eps_start=0.5, eps_decay=0.99):
         super().__init__(env)
         self.__env = env
         self.__memory = Memory(memory_size)
@@ -77,8 +76,9 @@ class CNNAgent(BaselineAgent):
     def learned_act(self, state):
         state = torch.Tensor([state]).permute(0, 3, 1, 2).to(self.__device)
         with torch.no_grad():
-            q_values = self.__model(state)[0]
-        return torch.argmax(q_values)
+            logits = self.__model(state)
+            probabilities = F.softmax(logits, dim=-1).detach().numpy()[0]
+        return np.random.choice(list(range(self.__env.get_number_of_actions())), p=probabilities)
 
     def reinforce(self, state, next_state, action, reward, done, batch_size=32):
         self.__memory.remember([state, next_state, action, reward, done])
@@ -86,25 +86,22 @@ class CNNAgent(BaselineAgent):
             return 0.0
         
         minibatch = [self.__memory.random_access() for i in range(batch_size)]
-        input_states = torch.Tensor([values[0] / 255. for values in minibatch]).permute(0, 3, 1, 2).to(self.__device)
-        next_states = torch.Tensor([values[1] / 255. for values in minibatch]).permute(0, 3, 1, 2).to(self.__device)
+        input_states = torch.Tensor([values[0] for values in minibatch]).permute(0, 3, 1, 2).to(self.__device)
+        next_states = torch.Tensor([values[1] for values in minibatch]).permute(0, 3, 1, 2).to(self.__device)
         input_qs_list = self.__model(input_states)
         future_qs_list = self.__model(next_states)
         target_q = torch.zeros((batch_size, self.__env.get_number_of_actions())).to(self.__device)
 
         for i, mem_item in enumerate(minibatch):
-            s, ns, action, reward, done = mem_item
+            _, _, action, reward, done = mem_item
             if done:
                 target_q_value = reward
             else:
-                future_reward = torch.max(future_qs_list[i])
-                target_q_value = reward + self.__discount * future_reward
-
+                target_q_value = reward + self.__discount * torch.max(future_qs_list[i])
             target_q[i] = input_qs_list[i]
             target_q[i, action] = target_q_value
         
         self.__optimizer.zero_grad()
-        target_q = torch.clamp(target_q, -3, 3)
         output_q = self.__model(input_states)
         loss = self.__criterion(output_q, target_q)
         loss.backward()
@@ -112,19 +109,19 @@ class CNNAgent(BaselineAgent):
         return loss.item()
 
     def train(self, n_epochs=20, batch_size=32, output_path="./tmp"):
-        loss = 0
         for e in range(n_epochs):
             state = self.__env.reset()
             done = False
             score = 0
+            loss = 0
             while not done:
                 action = self.act(state, is_training=True)
                 next_state, reward, done, info = self.__env.step(action)
                 score += reward
-                loss = self.reinforce(state, next_state, action, reward, done)
+                loss += self.reinforce(state, next_state, action, reward, done)
                 state = next_state
-                print("Epoch {:03d}/{:03d} | Loss {:.4f} | Epsilon = {:.4f} | Score {}"
-                      .format(e, n_epochs, loss, self.epsilon, score))
+            print("Epoch {:03d}/{:03d} | Loss {:.4f} | Epsilon = {:.4f} | Score {}"
+                    .format(e, n_epochs, loss, self.epsilon, score))
             self.__env.draw_video(output_path + "/" + str(e))
             self.save()
             self.set_epsilon(self.epsilon * self.__eps_decay)

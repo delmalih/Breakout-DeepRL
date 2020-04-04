@@ -2,3 +2,4 @@ gym
 numpy
 torch
 scikit-video
+scikit-image

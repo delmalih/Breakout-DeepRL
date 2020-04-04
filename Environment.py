@@ -89,7 +89,7 @@ class Environment(object):
             self.generate_food()
             done = self.add_cell_to_snake()
         elif self.is_game_done():
-            reward = -10
+            reward = -1
             done = True
         return reward, done
 

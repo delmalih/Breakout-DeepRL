@@ -21,19 +21,15 @@ class DQNet(nn.Module):
         super(DQNet, self).__init__()
         self.conv_layers = nn.Sequential(
             nn.Conv2d(1, 16, 3, padding=1),              # 16 x 16 x 16
-            nn.BatchNorm2d(16),
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),                             # 8 x 8 x 16
             nn.Conv2d(16, 32, 3, padding=1),             # 8 x 8 x 32
-            nn.BatchNorm2d(32),
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),                             # 4 x 4 x 32
             nn.Conv2d(32, 64, 3, padding=1),             # 4 x 4 x 64
-            nn.BatchNorm2d(64),
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),                             # 2 x 2 x 64
             nn.Conv2d(64, 128, 3, padding=1),            # 2 x 2 x 128
-            nn.BatchNorm2d(128),
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),                             # 1 x 1 x 128
         )
@@ -114,14 +110,17 @@ class CNNAgent(BaselineAgent):
             done = False
             score = 0
             loss = 0
+            number_steps = 0
             while not done:
                 action = self.act(state, is_training=True)
                 next_state, reward, done, info = self.__env.step(action)
                 score += reward
                 loss += self.reinforce(state, next_state, action, reward, done)
+                number_steps += 1
                 state = next_state
-            print("Epoch {:03d}/{:03d} | Loss = {:.4f} | Epsilon = {:.4f} | Score = {}"
-                    .format(e, n_epochs, loss, self.epsilon, score))
+            loss /= number_steps
+            print("Epoch {:03d}/{:03d} | Loss {:3.4f} | Score = {:04d} | Epsilon {:.4f}"
+                    .format(e, n_epochs, loss, score, self.epsilon))
             self.__env.draw_video(output_path + "/" + str(e))
             self.save()
             self.set_epsilon(self.epsilon * self.__eps_decay)

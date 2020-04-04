@@ -21,21 +21,25 @@ class DQNet(nn.Module):
         super(DQNet, self).__init__()
         self.conv_layers = nn.Sequential(
             nn.Conv2d(3, 16, 3, padding=1),              # 16 x 16 x 16
-            nn.LeakyReLU(0.1),
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
             nn.MaxPool2d(2),                             # 8 x 8 x 16
             nn.Conv2d(16, 32, 3, padding=1),             # 8 x 8 x 32
-            nn.LeakyReLU(0.1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
             nn.MaxPool2d(2),                             # 4 x 4 x 32
             nn.Conv2d(32, 64, 3, padding=1),             # 4 x 4 x 64
-            nn.LeakyReLU(0.1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
             nn.MaxPool2d(2),                             # 2 x 2 x 64
             nn.Conv2d(64, 128, 3, padding=1),            # 2 x 2 x 128
-            nn.LeakyReLU(0.1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
             nn.MaxPool2d(2),                             # 1 x 1 x 128
         )
         self.fc_layers = nn.Sequential(
             nn.Linear(128, 128),
-            nn.LeakyReLU(0.1),
+            nn.ReLU(),
             nn.Linear(128, n_actions),
         )
 
@@ -63,7 +67,7 @@ class CNNAgent(BaselineAgent):
         if self.__train:
             nA = self.__env.get_number_of_actions()
             self.__model = DQNet(nA)
-            self.__optimizer = optim.Adam(self.__model.parameters(), lr=0.001)
+            self.__optimizer = optim.Adam(self.__model.parameters(), lr=0.0001)
             self.__criterion = nn.MSELoss()
         else:
             self.load()
@@ -119,7 +123,7 @@ class CNNAgent(BaselineAgent):
                 number_steps += 1
                 state = next_state
             loss /= number_steps
-            print("Epoch {:03d}/{:03d} | Loss {:3.4f} | Score = {:04d} | Epsilon {:.4f}"
+            print("Epoch {:03d}/{:03d} | Loss {:3.4f} | Score = {:03d} | Epsilon {:.4f}"
                     .format(e, n_epochs, loss, score, self.epsilon))
             self.__env.draw_video(output_path + "/" + str(e))
             self.save()

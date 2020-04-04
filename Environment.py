@@ -60,7 +60,7 @@ class Environment(object):
 
     def draw(self):
         state = np.zeros((self.__game_height, self.__game_width, 1))
-        state[self.__food_coordinates] = 1.
+        state[self.__food_coordinates] = .9
         for snake_coords in self.__snake_coordinates:
             if snake_coords[0] >= 0 and snake_coords[0] < state.shape[0] and snake_coords[1] >= 0 and snake_coords[1] < state.shape[1]:
                 state[snake_coords[0], snake_coords[1]] = .5
@@ -89,7 +89,7 @@ class Environment(object):
             self.generate_food()
             done = self.add_cell_to_snake()
         elif self.is_game_done():
-            reward = -1
+            reward = -100
             done = True
         return reward, done
 

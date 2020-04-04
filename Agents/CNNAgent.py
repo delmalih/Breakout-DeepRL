@@ -120,7 +120,7 @@ class CNNAgent(BaselineAgent):
                 score += reward
                 loss += self.reinforce(state, next_state, action, reward, done)
                 state = next_state
-            print("Epoch {:03d}/{:03d} | Loss {:.4f} | Epsilon = {:.4f} | Score {}"
+            print("Epoch {:03d}/{:03d} | Loss = {:.4f} | Epsilon = {:.4f} | Score = {}"
                     .format(e, n_epochs, loss, self.epsilon, score))
             self.__env.draw_video(output_path + "/" + str(e))
             self.save()

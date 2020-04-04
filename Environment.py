@@ -92,7 +92,7 @@ class Environment(object):
             self.generate_food()
             done = self.add_cell_to_snake()
         elif self.is_game_done():
-            reward = -10
+            reward = -100
             done = True
         else:
             reward = np.abs(self.__snake_coordinates[0] - self.__food_coordinates).sum() / (self.__game_width + self.__game_height)

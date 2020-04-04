@@ -88,14 +88,14 @@ class Environment(object):
             self.__snake_coordinates[i] = self.__snake_coordinates[i-1]
         self.__snake_coordinates[0] = snake_head_coords
         if (self.__snake_coordinates[0] == self.__food_coordinates).all():
-            reward = +10
+            reward = 1
             self.generate_food()
             done = self.add_cell_to_snake()
         elif self.is_game_done():
-            reward = -100
+            reward = -1
             done = True
         else:
-            reward = np.abs(self.__snake_coordinates[0] - self.__food_coordinates).sum() / (self.__game_width + self.__game_height)
+            reward = 0.1 * np.abs(self.__snake_coordinates[0] - self.__food_coordinates).sum() / (self.__game_width + self.__game_height)
             done = False
         return reward, done
 

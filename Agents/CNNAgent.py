@@ -20,23 +20,15 @@ class DQNet(nn.Module):
     def __init__(self, n_actions):
         super(DQNet, self).__init__()
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(3, 16, 3, padding=1),             # 32 x 32 x 16
-            nn.BatchNorm2d(16),
+            nn.Conv2d(3, 16, 8, stride=4),
             nn.ReLU(),
-            nn.MaxPool2d(4),                            # 8 x 8 x 16
-            nn.Conv2d(16, 32, 3, padding=1),            # 8 x 8 x 32
-            nn.BatchNorm2d(32),
+            nn.Conv2d(16, 32, 4, stride=2),
             nn.ReLU(),
-            nn.MaxPool2d(4),                            # 2 x 2 x 32
-            nn.Conv2d(32, 64, 3, padding=1),            # 2 x 2 x 64
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.MaxPool2d(2),                            # 1 x 1 x 64
         )
         self.fc_layers = nn.Sequential(
-            nn.Linear(64, 64),
+            nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(64, n_actions),
+            nn.Linear(128, n_actions),
         )
 
     def forward(self, x):
@@ -47,7 +39,7 @@ class DQNet(nn.Module):
 
 
 class CNNAgent(BaselineAgent):
-    def __init__(self, env, model_path,  memory_size=100000, discount=0.9, train=False, eps_start=0.8, eps_decay=0.99, eps_min=0.05):
+    def __init__(self, env, model_path,  memory_size=100000, discount=0.9, train=False, eps_start=0.9, eps_decay=0.999, eps_min=0.05):
         super().__init__(env)
         self.__env = env
         self.__memory = Memory(memory_size)
@@ -111,20 +103,18 @@ class CNNAgent(BaselineAgent):
             done = False
             score = 0
             loss = 0
-            number_steps = 0
             while not done:
                 action = self.act(state, is_training=True)
                 next_state, reward, done, info = self.__env.step(action)
                 score += reward
-                loss += self.reinforce(state, next_state, action, reward, done, batch_size)
-                number_steps += 1
+                loss = self.reinforce(state, next_state, action, reward, done, batch_size)
                 state = next_state
-            loss /= number_steps
-            print("Epoch {:03d}/{:03d} | Loss {:3.4f} | Score = {:06.2f} | Epsilon {:.4f}"
-                    .format(e, n_epochs, loss, score, self.epsilon))
+                self.set_epsilon(self.epsilon * self.__eps_decay if self.epsilon > self.__eps_min else self.__eps_min)
+                print("Epoch {:03d}/{:03d} | Loss {:3.4f} | Score = {:05.4f} | Epsilon {:.4f}"
+                        .format(e, n_epochs, loss, score, self.epsilon))
+            print("-" * 40)
             self.__env.draw_video(output_path + "/" + str(e))
             self.save()
-            self.set_epsilon(self.epsilon * self.__eps_decay if self.epsilon > self.__eps_min else self.__eps_min)
 
     def save(self):
         torch.save(self.__model, self.__model_path)

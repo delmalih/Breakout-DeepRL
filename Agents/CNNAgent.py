@@ -47,7 +47,7 @@ class DQNet(nn.Module):
 
 
 class CNNAgent(BaselineAgent):
-    def __init__(self, env, model_path,  memory_size=100000, discount=0.9, train=False, eps_start=0.5, eps_decay=0.99):
+    def __init__(self, env, model_path,  memory_size=100000, discount=0.9, train=False, eps_start=0.8, eps_decay=0.99, eps_min=0.05):
         super().__init__(env)
         self.__env = env
         self.__memory = Memory(memory_size)
@@ -56,6 +56,7 @@ class CNNAgent(BaselineAgent):
         self.__train = train
         self.__model_path = model_path
         self.__eps_decay = eps_decay
+        self.__eps_min = eps_min
         self.set_epsilon(eps_start)
         self.create_model()
 
@@ -123,7 +124,7 @@ class CNNAgent(BaselineAgent):
                     .format(e, n_epochs, loss, score, self.epsilon))
             self.__env.draw_video(output_path + "/" + str(e))
             self.save()
-            self.set_epsilon(self.epsilon * self.__eps_decay)
+            self.set_epsilon(self.epsilon * self.__eps_decay if self.epsilon > self.__eps_min else self.__eps_min)
 
     def save(self):
         torch.save(self.__model, self.__model_path)

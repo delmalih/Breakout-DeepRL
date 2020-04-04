@@ -40,7 +40,7 @@ class BaselineAgent(object):
                 score += reward
             self.__env.draw_video(output_path + "/" + str(e))
             total_score += score
-            print("Epoch = {:06d} | Current score = {:2.2f} | N Steps = {:06d}".format(e, score, len(self.__env.get_video())))
+            print("Epoch = {:06d} | Current score = {:06.2f} | N Steps = {:06d}".format(e, score, len(self.__env.get_video())))
         print("Average score: {}".format(1. * total_score / epochs))
 
     def learned_act(self, state):

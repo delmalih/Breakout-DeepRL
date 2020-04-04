@@ -2,7 +2,7 @@
 # Import #
 ##########
 
-import json
+import os
 import numpy as np
 import torch
 import torch.nn as nn
@@ -20,18 +20,18 @@ class DQNet(nn.Module):
     def __init__(self, n_actions):
         super(DQNet, self).__init__()
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(3, 16, 3, padding=1),              # 8 x 8 x 16
+            nn.Conv2d(3, 16, 3, padding=1),             # 32 x 32 x 16
             nn.BatchNorm2d(16),
             nn.ReLU(),
-            nn.MaxPool2d(2),                             # 4 x 4 x 16
-            nn.Conv2d(16, 32, 3, padding=1),             # 4 x 4 x 32
+            nn.MaxPool2d(4),                            # 8 x 8 x 16
+            nn.Conv2d(16, 32, 3, padding=1),            # 8 x 8 x 32
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.MaxPool2d(2),                             # 2 x 2 x 32
-            nn.Conv2d(32, 64, 3, padding=1),             # 2 x 2 x 64
+            nn.MaxPool2d(4),                            # 2 x 2 x 32
+            nn.Conv2d(32, 64, 3, padding=1),            # 2 x 2 x 64
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.MaxPool2d(2),                             # 1 x 1 x 64
+            nn.MaxPool2d(2),                            # 1 x 1 x 64
         )
         self.fc_layers = nn.Sequential(
             nn.Linear(64, 64),
@@ -120,7 +120,7 @@ class CNNAgent(BaselineAgent):
                 number_steps += 1
                 state = next_state
             loss /= number_steps
-            print("Epoch {:03d}/{:03d} | Loss {:3.4f} | Score = {:03d} | Epsilon {:.4f}"
+            print("Epoch {:03d}/{:03d} | Loss {:3.4f} | Score = {:06.2f} | Epsilon {:.4f}"
                     .format(e, n_epochs, loss, score, self.epsilon))
             self.__env.draw_video(output_path + "/" + str(e))
             self.save()
@@ -130,4 +130,8 @@ class CNNAgent(BaselineAgent):
         torch.save(self.__model, self.__model_path)
 
     def load(self):
-        self.__model = torch.load(self.__model_path)
+        if os.path.exists(self.__model_path):
+            self.__model = torch.load(self.__model_path)
+        else:
+            nA = self.__env.get_number_of_actions()
+            self.__model = DQNet(nA)

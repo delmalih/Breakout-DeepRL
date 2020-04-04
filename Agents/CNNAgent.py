@@ -22,16 +22,16 @@ class DQNet(nn.Module):
         self.conv_layers = nn.Sequential(
             nn.Conv2d(3, 16, 3, padding=1),              # 16 x 16 x 16
             nn.LeakyReLU(0.1),
-            nn.Conv2d(16, 16, 3, padding=1, stride=2),   # 8 x 8 x 16
+            nn.MaxPool2d(2),                             # 8 x 8 x 16
             nn.Conv2d(16, 32, 3, padding=1),             # 8 x 8 x 32
             nn.LeakyReLU(0.1),
-            nn.Conv2d(32, 32, 3, padding=1, stride=2),   # 4 x 4 x 32
+            nn.MaxPool2d(2),                             # 4 x 4 x 32
             nn.Conv2d(32, 64, 3, padding=1),             # 4 x 4 x 64
             nn.LeakyReLU(0.1),
-            nn.Conv2d(64, 64, 3, padding=1, stride=2),   # 2 x 2 x 64
+            nn.MaxPool2d(2),                             # 2 x 2 x 64
             nn.Conv2d(64, 128, 3, padding=1),            # 2 x 2 x 128
             nn.LeakyReLU(0.1),
-            nn.Conv2d(128, 128, 3, padding=1, stride=2), # 1 x 1 x 128
+            nn.MaxPool2d(2),                             # 1 x 1 x 128
         )
         self.fc_layers = nn.Sequential(
             nn.Linear(128, 128),
@@ -81,7 +81,7 @@ class CNNAgent(BaselineAgent):
         if self.__memory.get_memory_size() < batch_size:
             return 0.0
         
-        minibatch = [self.__memory.random_access() for i in range(batch_size)]
+        minibatch = self.__memory.random_access(batch_size)
         input_states = torch.Tensor([values[0] for values in minibatch]).permute(0, 3, 1, 2).to(self.__device)
         next_states = torch.Tensor([values[1] for values in minibatch]).permute(0, 3, 1, 2).to(self.__device)
         input_qs_list = self.__model(input_states)

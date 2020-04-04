@@ -19,9 +19,9 @@ class Memory(object):
             self.__memory.pop(0)
         self.__memory.append(item)
 
-    def random_access(self):
-        index = np.random.randint(0, len(self.__memory))
-        return self.__memory[index]
+    def random_access(self, n):
+        index = np.random.randint(0, len(self.__memory), size=n)
+        return [self.__memory[i] for i in index]
 
     def get_memory_size(self):
         return len(self.__memory)

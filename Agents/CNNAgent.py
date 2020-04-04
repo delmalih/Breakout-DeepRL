@@ -47,7 +47,7 @@ class DQNet(nn.Module):
 
 
 class CNNAgent(BaselineAgent):
-    def __init__(self, env, model_path,  memory_size=100000, discount=0.9, train=False, eps_start=0.9, eps_decay=0.99):
+    def __init__(self, env, model_path,  memory_size=100000, discount=0.9, train=False, eps_start=0.6, eps_decay=0.99):
         super().__init__(env)
         self.__env = env
         self.__memory = Memory(memory_size)

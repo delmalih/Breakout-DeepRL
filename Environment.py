@@ -14,7 +14,7 @@ import numpy as np
 
 
 class Environment(object):
-    def __init__(self, game_width=30, game_height=30, initial_length=3):
+    def __init__(self, game_width=30, game_height=30, initial_length=2):
         self.__game_width = game_width
         self.__game_height = game_height
         self.__initial_length = initial_length

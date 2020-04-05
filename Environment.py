@@ -76,13 +76,16 @@ class Environment(object):
     def step(self, action):
         # 0 --> TURN 0° || 1 --> TURN 90° || 2 --> TURN -90°
         action = int(action)
+        print(action)
         reward, done = self.apply_action(action)
         state = self.draw()
         self.__video.append(state)
         return state, reward, done, {}
     
     def apply_action(self, action):
+        old_distance_to_food = np.abs(self.__snake_coordinates[0] - self.__food_coordinates).sum()
         self.__snake_heading = self.__action_matrix[action].dot(self.__snake_heading)
+        new_distance_to_food = np.abs(self.__snake_coordinates[0] - self.__food_coordinates).sum()
         snake_head_coords = self.__snake_coordinates[0] + self.__snake_heading
         for i in range(len(self.__snake_coordinates) - 1, 0, -1):
             self.__snake_coordinates[i] = self.__snake_coordinates[i-1]
@@ -95,8 +98,7 @@ class Environment(object):
             reward = -1
             done = True
         else:
-            # reward = 0.1 * (1. - np.abs(self.__snake_coordinates[0] - self.__food_coordinates).sum() / (self.__game_width + self.__game_height))
-            reward = 0
+            reward = 0.4 if new_distance_to_food < old_distance_to_food else -0.4
             done = False
         return reward, done
 

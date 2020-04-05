@@ -44,7 +44,7 @@ class DQNet(nn.Module):
 
 
 class CNNAgent(BaselineAgent):
-    def __init__(self, env, model_path,  memory_size=100000, discount=0.9, train=False, eps_start=0.99, eps_decay=0.99, eps_min=0.1):
+    def __init__(self, env, model_path,  memory_size=100000, discount=0.9, train=False, eps_start=0.99, eps_decay=0.999, eps_min=0.1):
         super().__init__(env)
         self.__env = env
         self.__memory = Memory(memory_size)
@@ -102,22 +102,24 @@ class CNNAgent(BaselineAgent):
         return loss.item()
 
     def train(self, n_epochs, batch_size, output_path="./tmp"):
+        done = False
+        loss = 0
+        score = 0
+        state = self.__env.reset()
         for e in range(n_epochs):
-            state = self.__env.reset()
-            done = False
-            score = 0
-            loss = 0
-            while not done:
-                action = self.act(state, is_training=True)
-                next_state, reward, done, info = self.__env.step(action)
-                score += reward
-                loss += self.reinforce(state, next_state, action, reward, done, batch_size)
+            action = self.act(state, is_training=True)
+            next_state, reward, done, info = self.__env.step(action)
+            score += reward
+            loss += self.reinforce(state, next_state, action, reward, done, batch_size)
+            if done:
+                self.__env.draw_video(output_path + "/" + str(e))
+                self.save()
+                state = self.__env.reset()
+            else:
                 state = next_state
-            print("Epoch {:03d}/{:03d} | Loss {:3.4f} | Score {:03d} | Snake size {:03d} | Epsilon {:.4f}"
-                    .format(e, n_epochs, loss, score, self.__env.get_snake_size(), self.epsilon))
+            print("Epoch {:03d}/{:03d} | Epsilon {:.4f} | Loss {:3.4f} | Score {:04.2f}"
+                    .format(e + 1, n_epochs, self.epsilon, loss / (e + 1), score / (e + 1)))
             self.set_epsilon(self.epsilon * self.__eps_decay if self.epsilon > self.__eps_min else self.__eps_min)
-            self.__env.draw_video(output_path + "/" + str(e))
-            self.save()
 
     def save(self):
         torch.save(self.__model, self.__model_path)

@@ -70,9 +70,9 @@ class CNNAgent(BaselineAgent):
     def learned_act(self, state):
         state = torch.Tensor([state]).permute(0, 3, 1, 2).to(self.__device)
         with torch.no_grad():
-            logits = self.__model(state)
-            probabilities = F.softmax(logits, dim=-1)[0].detach().cpu().numpy()
-        return np.random.choice(list(range(self.__env.get_number_of_actions())), p=probabilities)
+            logits = self.__model(state)[0]
+            action = torch.argmax(logits)
+        return action
 
     def reinforce(self, state, next_state, action, reward, done, batch_size):
         self.__memory.remember([state, next_state, action, reward, done])

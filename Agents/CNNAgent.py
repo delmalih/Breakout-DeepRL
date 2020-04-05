@@ -20,15 +20,20 @@ class DQNet(nn.Module):
     def __init__(self, n_actions):
         super(DQNet, self).__init__()
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(3, 16, 8, stride=4),
+            nn.Conv2d(3, 16, 3, padding=1),     # 8 x 8 x 16
             nn.ReLU(),
-            nn.Conv2d(16, 32, 4, stride=2),
+            nn.MaxPool2d(2),                    # 4 x 4 x 16
+            nn.Conv2d(16, 32, 3, padding=1),    # 4 x 4 x 32
             nn.ReLU(),
+            nn.MaxPool2d(2),                    # 2 x 2 x 32
+            nn.Conv2d(32, 64, 3, padding=1),    # 2 x 2 x 64
+            nn.ReLU(),
+            nn.MaxPool2d(2),                    # 1 x 1 x 64
         )
         self.fc_layers = nn.Sequential(
-            nn.Linear(128, 128),
+            nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(128, n_actions),
+            nn.Linear(64, n_actions),
         )
 
     def forward(self, x):

@@ -102,24 +102,22 @@ class CNNAgent(BaselineAgent):
         return loss.item()
 
     def train(self, n_epochs, batch_size, output_path="./tmp"):
-        done = False
-        loss = 0
-        score = 0
-        state = self.__env.reset()
         for e in range(n_epochs):
-            action = self.act(state, is_training=True)
-            next_state, reward, done, info = self.__env.step(action)
-            score += reward
-            loss += self.reinforce(state, next_state, action, reward, done, batch_size)
-            if done:
-                self.__env.draw_video(output_path + "/" + str(e))
-                self.save()
-                state = self.__env.reset()
-            else:
+            done = False
+            loss = 0
+            score = 0
+            state = self.__env.reset()
+            while not done:
+                action = self.act(state, is_training=True)
+                next_state, reward, done, info = self.__env.step(action)
+                score += reward
+                loss += self.reinforce(state, next_state, action, reward, done, batch_size)
                 state = next_state
-            print("Epoch {:03d}/{:03d} | Epsilon {:.4f} | Loss {:3.4f} | Score {:04.2f}"
-                    .format(e + 1, n_epochs, self.epsilon, loss / (e + 1), score / (e + 1)))
+            print("Epoch {:03d}/{:03d} | Epsilon {:.4f} | Loss {:3.4f} | Score {:04.2f} | Snake size {:03d}"
+                    .format(e + 1, n_epochs, self.epsilon, loss, score, self.__env.get_snake_size()))
             self.set_epsilon(self.epsilon * self.__eps_decay if self.epsilon > self.__eps_min else self.__eps_min)
+            self.__env.draw_video(output_path + "/" + str(e))
+            self.save()
 
     def save(self):
         torch.save(self.__model, self.__model_path)

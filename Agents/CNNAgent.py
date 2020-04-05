@@ -44,7 +44,7 @@ class DQNet(nn.Module):
 
 
 class CNNAgent(BaselineAgent):
-    def __init__(self, env, model_path,  memory_size=100000, discount=0.9, train=False, eps_start=0.9, eps_decay=0.999, eps_min=0.05):
+    def __init__(self, env, model_path,  memory_size=100000, discount=0.9, train=False, eps_start=0.99, eps_decay=0.99, eps_min=0.1):
         super().__init__(env)
         self.__env = env
         self.__memory = Memory(memory_size)
@@ -61,8 +61,7 @@ class CNNAgent(BaselineAgent):
         if self.__train:
             nA = self.__env.get_number_of_actions()
             self.__model = DQNet(nA)
-            self.__optimizer = optim.Adam(self.__model.parameters(), lr=0.001)
-            self.__criterion = nn.MSELoss()
+            self.__optimizer = optim.Adam(self.__model.parameters(), lr=1e-4)
         else:
             self.load()
         self.__model.to(self.__device)
@@ -97,7 +96,7 @@ class CNNAgent(BaselineAgent):
         
         self.__optimizer.zero_grad()
         output_q = self.__model(input_states)
-        loss = self.__criterion(output_q, target_q)
+        loss = torch.mean(torch.pow(output_q - target_q, 2))
         loss.backward()
         self.__optimizer.step()
         return loss.item()

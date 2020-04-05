@@ -95,7 +95,8 @@ class Environment(object):
             reward = -1
             done = True
         else:
-            reward = 0.1 * (1. - np.abs(self.__snake_coordinates[0] - self.__food_coordinates).sum() / (self.__game_width + self.__game_height))
+            # reward = 0.1 * (1. - np.abs(self.__snake_coordinates[0] - self.__food_coordinates).sum() / (self.__game_width + self.__game_height))
+            reward = 0
             done = False
         return reward, done
 

@@ -166,3 +166,6 @@ class Environment(object):
 
     def get_video(self):
         return self.__video
+
+    def get_snake_size(self):
+        return len(self.__snake_coordinates)

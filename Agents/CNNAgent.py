@@ -113,9 +113,9 @@ class CNNAgent(BaselineAgent):
                 score += reward
                 loss += self.reinforce(state, next_state, action, reward, done, batch_size)
                 state = next_state
-                self.set_epsilon(self.epsilon * self.__eps_decay if self.epsilon > self.__eps_min else self.__eps_min)
-            print("Epoch {:03d}/{:03d} | Loss {:3.4f} | Score {:05.4f} | Snake size {:03d} | Epsilon {:.4f}"
+            print("Epoch {:03d}/{:03d} | Loss {:3.4f} | Score {:03d} | Snake size {:03d} | Epsilon {:.4f}"
                     .format(e, n_epochs, loss, score, self.__env.get_snake_size(), self.epsilon))
+            self.set_epsilon(self.epsilon * self.__eps_decay if self.epsilon > self.__eps_min else self.__eps_min)
             self.__env.draw_video(output_path + "/" + str(e))
             self.save()
 

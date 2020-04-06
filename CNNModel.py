@@ -42,5 +42,4 @@ class CNNModel(nn.Module):
         x = self.conv_layers(x)
         x = x.view(x.size(0), -1)
         q_values = self.q_values_head(x)
-        q_values = q_values.clamp(-3, 3)
         return q_values

@@ -4,6 +4,7 @@ import torch
 
 # GLOBAL CONSTANTS
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+CPU_DEVICE = torch.device('cpu')
 OUTPUT_FOLDER = './tmp'
 
 

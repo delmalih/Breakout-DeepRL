@@ -35,13 +35,10 @@ class CNNAgent(BaselineAgent):
         self.create_model()
 
     def create_model(self):
-        if self.is_training:
-            nA = self.env.get_number_of_actions()
-            self.model = CNNModel(nA)
-            self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-        else:
-            self.load()
+        self.load()
         self.model.to(self.device)
+        if self.is_training:
+            self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
     def learned_act(self, state):
         state = torch.Tensor(state).to(self.device)

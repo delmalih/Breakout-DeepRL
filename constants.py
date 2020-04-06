@@ -28,8 +28,8 @@ MODEL_PATH = "./tmp/model.pth"
 MAX_MEMORY = 500000
 DISCOUNT = .99
 EPS_START = .99
-EPS_MIN = .1
-EPS_DECAY = .9995
+EPS_MIN = .01
+EPS_DECAY = .9999
 LEARNING_RATE = 1e-3
 CONV_FILTERS = torch.tensor([
     [

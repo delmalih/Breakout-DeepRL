@@ -118,8 +118,8 @@ class Environment(object):
         return eaten
     
     def _compute_distance_to_food(self):
-        head_coords = (self.envs[:, constants.HEAD_CHANNEL, :, :] > 1e-16).nonzero()
-        food_coords = (self.envs[:, constants.FOOD_CHANNEL, :, :] > 1e-16).nonzero()
+        head_coords = (self.envs[:, constants.HEAD_CHANNEL, :, :] > 1e-16).nonzero().long()
+        food_coords = (self.envs[:, constants.FOOD_CHANNEL, :, :] > 1e-16).nonzero().long()
         print(self.envs[head_coords[:, 0], constants.HEAD_CHANNEL, head_coords[:, 1], head_coords[:, 2]])
         distance = (head_coords - food_coords).abs().sum(-1)
         return distance

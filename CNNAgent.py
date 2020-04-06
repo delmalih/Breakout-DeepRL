@@ -41,7 +41,6 @@ class CNNAgent(BaselineAgent):
             self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
     def learned_act(self, state):
-        state = torch.Tensor(state).to(self.device)
         with torch.no_grad():
             q_values = self.model(state)
             action = torch.argmax(q_values, dim=-1)

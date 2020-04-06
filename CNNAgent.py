@@ -59,7 +59,7 @@ class CNNAgent(BaselineAgent):
             state = next_state
             if (e + 1) % constants.SAVE_FREQ == 0:
                 print("Epoch {:03d}/{:03d} | Epsilon {:.4f} | Loss {:3.4f} | Score {:04.2f}"
-                        .format(e + 1, n_epochs, self.epsilon, loss, score))
+                        .format(e + 1, n_epochs, self.epsilon, loss / constants.SAVE_FREQ, score / constants.SAVE_FREQ))
                 self.env.draw_video(output_path + "/" + str(e + 1))
                 self.save()
                 self.env._reset_video()
@@ -72,7 +72,7 @@ class CNNAgent(BaselineAgent):
         target_q = input_q_values.clone()
         target_q[done == 1, action[done == 1]] = reward[done == 1]
         target_q[done == 0, action[done == 0]] = reward[done == 0] + torch.max(next_q_values[done == 0], dim=-1)[0]
-        loss = torch.mean(torch.pow(input_q_values - target_q, 2))
+        loss = torch.sum(torch.pow(input_q_values - target_q, 2))
         loss.backward()
         self.optimizer.step()
         return loss.item()

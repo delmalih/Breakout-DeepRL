@@ -88,17 +88,20 @@ class Environment(object):
         rotation_matrix[:, 0, 1] = -torch.sin(rotation_angle).to(self.device)
         rotation_matrix[:, 1, 0] = torch.sin(rotation_angle).to(self.device)
         rotation_matrix[:, 1, 1] = torch.cos(rotation_angle).to(self.device)
-        self.directions = torch.matmul(rotation_matrix, self.directions)
+        self.directions = torch.matmul(rotation_matrix, self.directions).long().float()
 
     def _update_head(self):
-        conv_directions = torch.zeros((self.num_envs, 3), dtype=torch.long).to(self.device)
-        conv_directions[:, 0] = torch.arange(0, self.num_envs, 1, dtype=torch.long).to(self.device)
-        conv_directions[:, 1:] = (self.directions.long() + 1).view(self.num_envs, 2)
-        conv_kernels = torch.zeros((self.num_envs, 1, 3, 3)).to(self.device)
-        conv_kernels[conv_directions[:, 0], 0, conv_directions[:, 1], conv_directions[:, 2]] = 1.
+        conv_kernels = constants.CONV_FILTERS.to(self.device)
+        directions_idx = torch.zeros((self.num_envs,), dtype=torch.long).to(self.device)
+        directions_idx[(self.directions[:, 0, 0] == 0) & (self.directions[:, 1, 0] == -1)] = 0
+        directions_idx[(self.directions[:, 0, 0] == +1) & (self.directions[:, 1, 0] == 0)] = 1
+        directions_idx[(self.directions[:, 0, 0] == 0) & (self.directions[:, 1, 0] == +1)] = 2
+        directions_idx[(self.directions[:, 0, 0] == -1) & (self.directions[:, 1, 0] == 0)] = 3
+        directions_onehot = torch.zeros((self.num_envs, 4)).to(self.device)
+        directions_onehot.scatter_(1, directions_idx.unsqueeze(-1), 1)
         head_envs = self.envs[:, constants.HEAD_CHANNEL:constants.HEAD_CHANNEL+1, :, :]
         head_envs = F.conv2d(head_envs, conv_kernels, padding=1)
-        head_envs = torch.einsum('bchw,bc->bhw', [head_envs, torch.eye(self.num_envs).to(self.device)])
+        head_envs = torch.einsum('bchw,bc->bhw', [head_envs, directions_onehot])
         self.envs[:, constants.HEAD_CHANNEL, :, :] = head_envs
 
     def _check_collision(self):
@@ -118,10 +121,9 @@ class Environment(object):
         return eaten
     
     def _compute_distance_to_food(self):
-        print(self.envs[:, constants.HEAD_CHANNEL, :, :].sum())
-        head_coords = (self.envs[:, constants.HEAD_CHANNEL, :, :] > constants.EPS).nonzero()
-        food_coords = (self.envs[:, constants.FOOD_CHANNEL, :, :] > constants.EPS).nonzero()
-        print(self.envs[head_coords[:, 0], constants.HEAD_CHANNEL, head_coords[:, 1], head_coords[:, 2]])
+        head_coords = self.envs[:, constants.HEAD_CHANNEL, :, :].round().nonzero()
+        food_coords = self.envs[:, constants.FOOD_CHANNEL, :, :].round().nonzero()
+        print(head_coords.shape, food_coords.shape)
         distance = (head_coords - food_coords).abs().sum(-1)
         return distance
     

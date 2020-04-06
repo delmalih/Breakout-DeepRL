@@ -5,7 +5,6 @@ import torch
 # GLOBAL CONSTANTS
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 OUTPUT_FOLDER = './tmp'
-EPS = 1e-6
 
 
 # GAME CONSTANTS
@@ -31,6 +30,28 @@ EPS_START = .99
 EPS_MIN = .1
 EPS_DECAY = .999
 LEARNING_RATE = 1e-3
+CONV_FILTERS = torch.tensor([
+    [
+        [0, 1, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+    ],
+    [
+        [0, 0, 0],
+        [0, 0, 1],
+        [0, 0, 0],
+    ],
+    [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 1, 0],
+    ],
+    [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 0, 0],
+    ],
+]).unsqueeze(1).float()
 
 
 # DISPLAY

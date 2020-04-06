@@ -62,7 +62,7 @@ class CNNAgent(BaselineAgent):
                         .format(e + 1, n_epochs, self.epsilon, loss, score))
                 self.env.draw_video(output_path + "/" + str(e + 1))
                 self.save()
-                state = self.env.reset()
+                self.env._reset_video()
                 score = loss = 0
 
     def reinforce(self, state, next_state, action, reward, done):

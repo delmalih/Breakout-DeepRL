@@ -80,12 +80,11 @@ class Environment(object):
         conv_kernels = constants.CONV_FILTERS.to(self.device)
         action_onehot = torch.zeros((self.num_envs, self.get_number_of_actions())).to(self.device)
         action_onehot.scatter_(1, action.to(self.device).unsqueeze(-1), 1)
-        prev_head_envs = self.envs[:, constants.HEAD_CHANNEL:constants.HEAD_CHANNEL+1, :, :]
-        head_envs = F.conv2d(prev_head_envs, conv_kernels, padding=1)
+        head_envs = self.envs[:, constants.HEAD_CHANNEL:constants.HEAD_CHANNEL+1, :, :].clone()
+        head_envs = F.conv2d(head_envs, conv_kernels, padding=1)
         head_envs = torch.einsum('bchw,bc->bhw', [head_envs, action_onehot]).long().float()
-        if head_envs.sum() == 0:
-            head_envs = prev_head_envs.squeeze(1)
-        self.envs[:, constants.HEAD_CHANNEL, :, :] = head_envs
+        to_update = head_envs.sum(-1).sum(-1) > 0
+        self.envs[to_update, constants.HEAD_CHANNEL, :, :] = head_envs[to_update]
     
     def _compute_reward_and_update(self):
         head_envs = self.envs[:, constants.HEAD_CHANNEL, :, :]

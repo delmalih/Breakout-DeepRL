@@ -33,21 +33,16 @@ class Environment(object):
         return self.envs
 
     def _create_envs(self):
-        # Init. envs
-        self.envs = torch.zeros((self.num_envs, self.n_channels, self.size, self.size)).to(self.device)
-        
-        # Init. head
-        head_coords = torch.cat((
-            torch.arange(0, self.num_envs).unsqueeze(1).to(self.device),
-            torch.randint(1, self.size - 2, size=(self.num_envs, 2)).to(self.device),
-        ), dim=-1).to(self.device)
-        self.envs[head_coords[:, 0], constants.HEAD_CHANNEL, head_coords[:, 1], head_coords[:, 2]] = 1
-
-        # Init. bonus malus
         nb_bonus = nb_malus = int(constants.SIZE * constants.SIZE * constants.FILL_PERC / 2.)
+        self.envs = torch.zeros((self.num_envs, self.n_channels, self.size, self.size)).to(self.device)
         for env_id in range(self.num_envs):
+            self._generate_head(env_id)
             self._generate_bonus(env_id, nb_bonus)
             self._generate_malus(env_id, nb_malus)
+
+    def _generate_head(self, env_id):
+        chosen_coords = self._sample_possible_coords(env_id, 1)
+        self.envs[env_id, constants.HEAD_CHANNEL, chosen_coords[:, 0], chosen_coords[:, 1]] = 1
 
     def _generate_bonus(self, env_id, nb):
         chosen_coords = self._sample_possible_coords(env_id, nb)
@@ -60,7 +55,7 @@ class Environment(object):
     def _sample_possible_coords(self, env_id, nb):
         already_taken = self.envs[env_id, :, :, :].sum(0)
         possible_coords = (already_taken == 0).nonzero().to(self.device)
-        chosen_idx = torch.randint(possible_coords.size(0), size=(nb, 1)).to(self.device)[:, 0]
+        chosen_idx = torch.randperm(possible_coords.size(0))[:nb]
         chosen_coords = possible_coords[chosen_idx]
         return chosen_coords
 
@@ -70,8 +65,7 @@ class Environment(object):
 
     def step(self, actions):
         self._update_head(actions)
-        reward = self._compute_reward_and_update()
-        done = torch.zeros((self.num_envs,)).to(self.device)
+        reward, done = self._compute_reward_and_update()
         self.video.append(self.render())
         self.scores.append(reward.sum() if len(self.scores) == 0 else self.scores[-1] + reward.sum())
         return self.envs, reward, done, {}
@@ -83,23 +77,35 @@ class Environment(object):
         head_envs = self.envs[:, constants.HEAD_CHANNEL:constants.HEAD_CHANNEL+1, :, :].clone()
         head_envs = F.conv2d(head_envs, conv_kernels, padding=1)
         head_envs = torch.einsum('bchw,bc->bhw', [head_envs, action_onehot]).long().float()
-        to_update = head_envs.sum(-1).sum(-1) > 0
-        self.envs[to_update, constants.HEAD_CHANNEL, :, :] = head_envs[to_update]
+        self.envs[:, constants.HEAD_CHANNEL, :, :] = head_envs
     
     def _compute_reward_and_update(self):
+        # Get envs
         head_envs = self.envs[:, constants.HEAD_CHANNEL, :, :]
         bonus_envs = self.envs[:, constants.BONUS_CHANNEL, :, :]
         malus_envs = self.envs[:, constants.MALUS_CHANNEL, :, :]
+
+        # Get done
+        done = head_envs.sum(-1).sum(-1) == 0
+        for env_id in done.nonzero()[:, 0]: self._generate_head(env_id)
+
+        # Get eaten
         eaten_bonus = (head_envs * bonus_envs).nonzero()
         eaten_malus = (head_envs * malus_envs).nonzero()
+
+        # Update eaten
         self.envs[eaten_bonus[:, 0], constants.BONUS_CHANNEL, eaten_bonus[:, 1], eaten_bonus[:, 2]] = 0.
         self.envs[eaten_malus[:, 0], constants.MALUS_CHANNEL, eaten_malus[:, 1], eaten_malus[:, 2]] = 0.
         for env_id in eaten_bonus[:, 0]: self._generate_bonus(env_id, 1)
         for env_id in eaten_malus[:, 0]: self._generate_malus(env_id, 1)
+
+        # Compute reward
         reward = torch.zeros((self.num_envs,)).to(self.device)
+        reward[done] = constants.COLLISION_REWARD
         reward[eaten_bonus[:, 0]] = constants.BONUS_REWARD
         reward[eaten_malus[:, 0]] = constants.MALUS_REWARD
-        return reward
+
+        return reward, done.float()
 
     def sample_action(self):
         return torch.randint(self.get_number_of_actions(), size=(self.num_envs,))

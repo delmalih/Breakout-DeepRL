@@ -38,6 +38,7 @@ if __name__ == "__main__":
     env = Environment()
     agent = get_agent(args, env)
     if args.train:
+        print("CHECK")
         agent.train(constants.N_EPOCHS, constants.BATCH_SIZE, constants.OUTPUT_FOLDER)
     else:
         agent.play(constants.N_RANDOM_PLAYS, constants.OUTPUT_FOLDER)

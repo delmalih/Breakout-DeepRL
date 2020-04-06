@@ -5,6 +5,7 @@ import torch
 # GLOBAL CONSTANTS
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 OUTPUT_FOLDER = './tmp'
+EPS = 1e-6
 
 
 # GAME CONSTANTS

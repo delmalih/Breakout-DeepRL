@@ -6,6 +6,12 @@
 import cv2
 import skvideo.io
 import numpy as np
+import math
+
+import torch
+import torch.nn.functional as F
+
+import constants
 
 
 ###############
@@ -14,160 +20,137 @@ import numpy as np
 
 
 class Environment(object):
-    def __init__(self, game_width=6, game_height=6, initial_length=2):
-        self.__game_width = game_width
-        self.__game_height = game_height
-        self.__initial_length = initial_length
-        self.__action_matrix = [
-            np.array([[+1, 0], [0, +1]]),
-            np.array([[0, -1], [+1, 0]]),
-            np.array([[0, +1], [-1, 0]]),
-        ]
+    def __init__(self,
+                 num_envs: int = constants.NUM_ENVS,
+                 size: int = constants.SIZE):
+        self.num_envs = num_envs
+        self.size = size
+        self.device = constants.DEVICE
+        self.n_channels = constants.N_CHANNELS
         self.reset()
 
     def reset(self):
-        self.generate_snake()
-        self.generate_food()
-        state = self.draw()
-        self.__video = [state]
-        return state
+        self._reset_video()
+        self._create_envs()
+        return self.envs
 
-    def generate_food(self):
-        food_x = np.random.randint(0, self.__game_width - 1)
-        food_y = np.random.randint(0, self.__game_height - 1)
-        while self.is_in_snake((food_x, food_y)):
-            food_x = np.random.randint(0, self.__game_width - 1)
-            food_y = np.random.randint(0, self.__game_height - 1)
-        self.__food_coordinates = (food_x, food_y)
+    def _create_envs(self):
+        # Init. envs
+        self.envs = torch.zeros((self.num_envs, self.n_channels, self.size, self.size)).to(self.device)
+        self.directions = torch.zeros((self.num_envs, 2, 1)).to(self.device)
 
-    def generate_snake(self):
-        self.__snake_coordinates = []
-        head_x = np.random.randint(0, self.__game_width - 1)
-        head_y = np.random.randint(0, self.__game_height - 1)
-        self.__snake_coordinates.append(np.array((head_x, head_y)))
-        for _ in range(self.__initial_length - 1):
-            possible_coords = []
-            if head_x > 0 and not self.is_in_snake((head_x - 1, head_y)):
-                possible_coords.append(np.array((head_x - 1, head_y)))
-            if head_x < self.__game_width - 1 and not self.is_in_snake((head_x + 1, head_y)):
-                possible_coords.append(np.array((head_x + 1, head_y)))
-            if head_y > 0 and not self.is_in_snake((head_x, head_y - 1)):
-                possible_coords.append(np.array((head_x, head_y + 1)))
-            if head_y < self.__game_height - 1 and not self.is_in_snake((head_x, head_y + 1)):
-                possible_coords.append(np.array((head_x, head_y + 1)))
-            self.__snake_coordinates.append(possible_coords[np.random.randint(0, len(possible_coords))])
-        self.__snake_heading = [np.array((1, 0)), np.array((0, 1)), np.array((-1, 0)), np.array((0, -1))][np.random.randint(0, 4)]
+        # Update envs
+        for k in range(self.num_envs):
+            self._generate_snake(k)
+            self._generate_food(k)
 
-    def draw(self):
-        state = np.full((self.__game_height + 2, self.__game_width + 2, 3), 1.0)
-        state[self.__food_coordinates[0] + 1, self.__food_coordinates[1] + 1] = (0., 1., 0.)
-        for snake_coords in self.__snake_coordinates:
-            if snake_coords[0] >= 0 and snake_coords[0] < state.shape[0] and snake_coords[1] >= 0 and snake_coords[1] < state.shape[1]:
-                state[snake_coords[0] + 1, snake_coords[1] + 1] = 0.
-        snake_head_coords = self.__snake_coordinates[0]
-        if snake_head_coords[0] >= 0 and snake_head_coords[0] < state.shape[0] and snake_head_coords[1] >= 0 and snake_head_coords[1] < state.shape[1]:
-            state[snake_head_coords[0] + 1, snake_head_coords[1] + 1] = (1., 0., 0.)
-        state[0,  :] = 0.
-        state[-1, :] = 0.
-        state[:,  0] = 0.
-        state[:, -1] = 0.
-        return state
+    def _generate_snake(self, env_id):
+        # Init. variable
+        self.envs[env_id, constants.HEAD_CHANNEL] = torch.zeros((self.size, self.size)).to(self.device)
+        self.directions[env_id] = torch.zeros((2, 1)).to(self.device)
 
-    def step(self, action):
-        # 0 --> TURN 0° || 1 --> TURN 90° || 2 --> TURN -90°
-        action = int(action)
-        reward, done = self.apply_action(action)
-        state = self.draw()
-        self.__video.append(state)
-        return state, reward, done, {}
+        # Generate head of snake
+        head_coords = torch.randint(1, self.size - 2, size=(2,)).to(self.device)
+        self.envs[env_id, constants.HEAD_CHANNEL, head_coords[0], head_coords[1]] = 1
+
+        # Generate direction
+        self.directions[env_id, 0, 0] = -1
+
+    def _generate_food(self, env_id):
+        self.envs[env_id, constants.FOOD_CHANNEL] = torch.zeros((self.size, self.size)).to(self.device)
+        head = self.envs[env_id, constants.HEAD_CHANNEL, :, :]
+        possible_coords = (head == 0).nonzero()
+        chosen_id = torch.randint(possible_coords.size(0), size=(1,))[0]
+        chosen_coord = possible_coords[chosen_id]
+        self.envs[env_id, constants.FOOD_CHANNEL, chosen_coord[0], chosen_coord[1]] = 1
+
+    def _reset_video(self):
+        self.video = []
+        self.scores = []
+
+    def step(self, actions: torch.Tensor):
+        self._update_direction(actions)
+        self._update_head()
+        done = self._check_collision().byte().float()
+        eaten = self._check_food().byte().float()
+        reward = (done * -1) + (eaten * +1)
+        self.video.append(self.render())
+        self.scores.append(reward.sum())
+        return self.envs, reward, done, {}
+
+    def _update_direction(self, action: torch.Tensor):
+        rotation_angle = (action.to(self.device).float() - 1.) * math.pi / 2.
+        rotation_matrix = torch.zeros((self.num_envs, 2, 2)).to(self.device)
+        rotation_matrix[:, 0, 0] = torch.cos(rotation_angle).to(self.device)
+        rotation_matrix[:, 0, 1] = -torch.sin(rotation_angle).to(self.device)
+        rotation_matrix[:, 1, 0] = torch.sin(rotation_angle).to(self.device)
+        rotation_matrix[:, 1, 1] = torch.cos(rotation_angle).to(self.device)
+        self.directions = torch.matmul(rotation_matrix, self.directions)
+
+    def _update_head(self):
+        conv_directions = torch.zeros((self.num_envs, 3), dtype=torch.long).to(self.device)
+        conv_directions[:, 0] = torch.arange(0, self.num_envs, 1, dtype=torch.long).to(self.device)
+        conv_directions[:, 1:] = (self.directions.long() + 1).view(self.num_envs, 2)
+        conv_kernels = torch.zeros((self.num_envs, 1, 3, 3)).to(self.device)
+        conv_kernels[conv_directions[:, 0], 0, conv_directions[:, 1], conv_directions[:, 2]] = 1
+        head_envs = self.envs[:, constants.HEAD_CHANNEL:constants.HEAD_CHANNEL+1, :, :]
+        head_envs = F.conv2d(head_envs, conv_kernels, padding=1)
+        head_envs = torch.einsum('bchw,bc->bhw', [head_envs, torch.eye(self.num_envs)])
+        self.envs[:, constants.HEAD_CHANNEL, :, :] = head_envs
+
+    def _check_collision(self):
+        head_envs = self.envs[:, constants.HEAD_CHANNEL, :, :]
+        collision = head_envs.view(self.num_envs, -1).sum(dim=-1) == 0
+        for env_id in collision.nonzero().view(-1):
+            self._generate_snake(env_id)
+            self._generate_food(env_id)
+        return collision
     
-    def apply_action(self, action):
-        old_distance_to_food = np.abs(self.__snake_coordinates[0] - self.__food_coordinates).sum()
-        self.__snake_heading = self.__action_matrix[action].dot(self.__snake_heading)
-        new_distance_to_food = np.abs(self.__snake_coordinates[0] - self.__food_coordinates).sum()
-        snake_head_coords = self.__snake_coordinates[0] + self.__snake_heading
-        for i in range(len(self.__snake_coordinates) - 1, 0, -1):
-            self.__snake_coordinates[i] = self.__snake_coordinates[i-1]
-        self.__snake_coordinates[0] = snake_head_coords
-        if (self.__snake_coordinates[0] == self.__food_coordinates).all():
-            reward = 1
-            self.generate_food()
-            done = self.add_cell_to_snake()
-        elif self.is_game_done():
-            reward = -1
-            done = True
-        else:
-            reward = 0.4 if new_distance_to_food < old_distance_to_food else -0.4
-            done = False
-        return reward, done
-
-    def add_cell_to_snake(self):
-        new_coords = None
-        done = False
-        last1_x, last1_y = self.__snake_coordinates[-1]
-        last2_x, last2_y = self.__snake_coordinates[-2]
-        if last1_x == last2_x and (2 * last1_y - last2_y) >= 0 and (2 * last1_y - last2_y) < self.__game_height:
-            new_coords = (last1_x, 2 * last1_y - last2_y)
-        elif last1_y == last2_y and (2 * last1_x - last2_x) >= 0 and (2 * last1_x - last2_x) < self.__game_height:
-            new_coords = (2 * last1_x - last2_x, last1_y)
-        else:
-            possible_coordinates = []
-            if not self.is_in_snake((last1_x - 1, last1_y)) and last1_x > 0:
-                possible_coordinates.append((last1_x - 1, last1_y))
-            if not self.is_in_snake((last1_x + 1, last1_y)) and last1_x < self.__game_width - 1:
-                possible_coordinates.append((last1_x + 1, last1_y))
-            if not self.is_in_snake((last1_x, last1_y - 1)) and last1_y > 0:
-                possible_coordinates.append((last1_x, last1_y - 1))
-            if not self.is_in_snake((last1_x, last1_y + 1)) and last1_y < self.__game_height - 1:
-                possible_coordinates.append((last1_x, last1_y + 1))
-            if len(possible_coordinates) == 0:
-                done = True
-            else:
-                new_coords = possible_coordinates[np.random.randint(0, len(possible_coordinates))]
-        if new_coords is not None:
-            self.__snake_coordinates.append(np.array(new_coords))
-        return done
-
-    def is_game_done(self):
-        snake_head_coords = self.__snake_coordinates[0]
-        self.__snake_coordinates[0] = (None, None)
-        is_head_in_tail = self.is_in_snake(snake_head_coords)
-        self.__snake_coordinates[0] = snake_head_coords
-        return (
-            is_head_in_tail or
-            snake_head_coords[0] < 0 or
-            snake_head_coords[1] < 0 or
-            snake_head_coords[0] > self.__game_width - 1 or
-            snake_head_coords[1] > self.__game_height -1
-        )
-    
-    def is_in_snake(self, coords):
-        x, y = coords
-        for (x_s, y_s) in self.__snake_coordinates:
-            if x == x_s and y == y_s:
-                return True
-        return False
+    def _check_food(self):
+        head_envs = self.envs[:, constants.HEAD_CHANNEL, :, :]
+        food_envs = self.envs[:, constants.FOOD_CHANNEL, :, :]
+        eaten = (head_envs * food_envs).view(self.num_envs, -1).sum(-1) > 0
+        for env_id in eaten.nonzero().view(-1):
+            self._generate_food(env_id)
+        return eaten
 
     def sample_action(self):
-        return np.random.randint(0, self.get_number_of_actions())
+        return torch.randint(3, size=(self.num_envs,))
+
+    def render(self):
+        frames = np.zeros((self.num_envs, self.size + 2, self.size + 2, 3))
+        frames[:, 1:-1, 1:-1, :self.n_channels] = self.envs.permute(0, 2, 3, 1).cpu().detach().numpy()
+        frames[:, 0, :, :] = 1.
+        frames[:, :, 0, :] = 1.
+        frames[:, -1, :, :] = 1.
+        frames[:, :, -1, :] = 1.
+        frames[frames > 0] = 1.
+        final_frame_w = int(np.ceil(np.sqrt(self.num_envs)))
+        final_frame_h = int(np.ceil(self.num_envs / final_frame_w))
+        final_frame = np.zeros((final_frame_h * (self.size + 2), final_frame_w * (self.size + 2), 3))
+        counter = 0
+        for i in range(final_frame_h):
+            for j in range(final_frame_w):
+                if counter < self.num_envs:
+                    final_frame[i * (self.size + 2) : (i+1) * (self.size + 2), j * (self.size + 2) : (j+1) * (self.size + 2)] = frames[counter]
+                counter += 1
+        return final_frame
 
     def draw_video(self, output_path):
-        self.__video = (np.array(self.__video) * 255).astype(np.uint8)
         writer = skvideo.io.FFmpegWriter("{}.mp4".format(output_path))
-        for frame in self.__video:
-            frame = cv2.resize(frame, (500, 500), interpolation=cv2.INTER_NEAREST)
-            for _ in range(5):
-                writer.writeFrame(frame)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        white_color = (255, 255, 255)
+        frame_size = constants.FRAME_SIZE
+        for k, frame in enumerate(self.video):
+            frame = (frame * 255).astype(np.uint8)
+            frame = cv2.resize(frame, (frame_size, frame_size), interpolation=cv2.INTER_NEAREST)
+            frame_with_text = np.zeros((frame.shape[0] + 100, frame.shape[1], 3), dtype=np.uint8)
+            frame_with_text[100:, :, :] = frame
+            cv2.putText(frame_with_text, "Score = {:04d}".format(int(self.scores[k])),
+                        (int(0.5 * frame.shape[1] - 100), 75), font, 1, white_color, 2)
+            for _ in range(constants.FRAME_REPEAT):
+                writer.writeFrame(frame_with_text)
         writer.close()
 
     def get_number_of_actions(self):
         return 3
-
-    def get_state_shape(self):
-        return (self.__game_width, self.__game_height)
-
-    def get_video(self):
-        return self.__video
-
-    def get_snake_size(self):
-        return len(self.__snake_coordinates)

@@ -43,7 +43,6 @@ class CNNAgent(BaselineAgent):
     def learned_act(self, state):
         with torch.no_grad():
             q_values = self.model(state)
-            print(q_values)
             action = torch.argmax(q_values, dim=-1)
         return action
 
@@ -83,7 +82,7 @@ class CNNAgent(BaselineAgent):
 
     def load(self):
         if os.path.exists(self.model_path):
-            self.model = torch.load(self.model_path)
+            self.model = torch.load(self.model_path, map_location=self.device)
         else:
             nA = self.env.get_number_of_actions()
             self.model = CNNModel(nA)

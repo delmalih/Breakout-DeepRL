@@ -129,8 +129,8 @@ class Environment(object):
     
     def _compute_reward(self, delta_distances, done, eaten):
         reward = torch.zeros((self.num_envs,)).to(self.device)
-        reward[delta_distances < 0] = +0.1
-        reward[delta_distances > 0] = -0.1
+        reward[delta_distances < 0] = +0.4
+        reward[delta_distances > 0] = -0.4
         reward[done == 1] = -1
         reward[eaten == 1] = +1
         return reward

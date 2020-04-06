@@ -54,7 +54,6 @@ class CNNAgent(BaselineAgent):
             next_state, reward, done, _ = self.env.step(action)
             score += reward.sum()
             self.memory.remember(state, next_state, action, reward, done)
-            loss += self.reinforce(state, next_state, action, reward, done)
             loss += self.reinforce(*self.memory.random_access(batch_size))
             self.set_epsilon(self.epsilon * self.eps_decay if self.epsilon > self.eps_min else self.eps_min)
             state = next_state

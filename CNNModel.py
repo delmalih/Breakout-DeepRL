@@ -44,10 +44,10 @@ class CNNModel(nn.Module):
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),
             # <-- Block 4 --> #
-            nn.Conv2d(64, 128, 3, padding=1)
+            nn.Conv2d(64, 128, 3, padding=1),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.1),
-            nn.Conv2d(128, 128, 3, padding=1)
+            nn.Conv2d(128, 128, 3, padding=1),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),

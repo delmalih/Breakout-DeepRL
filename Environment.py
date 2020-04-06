@@ -79,7 +79,7 @@ class Environment(object):
     def _update_head(self, action):
         conv_kernels = constants.CONV_FILTERS.to(self.device)
         action_onehot = torch.zeros((self.num_envs, self.get_number_of_actions())).to(self.device)
-        action_onehot.scatter_(1, action.unsqueeze(-1), 1)
+        action_onehot.scatter_(1, action.to(self.device).unsqueeze(-1), 1)
         prev_head_envs = self.envs[:, constants.HEAD_CHANNEL:constants.HEAD_CHANNEL+1, :, :]
         head_envs = F.conv2d(prev_head_envs, conv_kernels, padding=1)
         head_envs = torch.einsum('bchw,bc->bhw', [head_envs, action_onehot]).long().float()

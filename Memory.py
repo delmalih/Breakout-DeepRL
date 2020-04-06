@@ -23,11 +23,11 @@ class Memory(object):
         self.dones = torch.Tensor((0,)).to(self.device)
 
     def remember(self, state, next_state, action, reward, done):
-        self.states = torch.cat((self.states, state), dim=0)
-        self.next_states = torch.cat((self.next_states, next_state), dim=0)
-        self.actions = torch.cat((self.actions, action), dim=0)
-        self.rewards = torch.cat((self.rewards, reward), dim=0)
-        self.dones = torch.cat((self.dones, done), dim=0)
+        self.states = torch.cat((self.states, state.to(self.device)), dim=0)
+        self.next_states = torch.cat((self.next_states, next_state.to(self.device)), dim=0)
+        self.actions = torch.cat((self.actions, action.to(self.device)), dim=0)
+        self.rewards = torch.cat((self.rewards, reward.to(self.device)), dim=0)
+        self.dones = torch.cat((self.dones, done.to(self.device)), dim=0)
         if self.states.size(0) > self.max_memory:
             excedent = self.states.size(0) - self.max_memory
             self.states = self.states[excedent:]

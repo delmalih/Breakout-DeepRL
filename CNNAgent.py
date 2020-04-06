@@ -51,13 +51,14 @@ class CNNAgent(BaselineAgent):
         state = self.env.reset()
         score = loss = 0
         for e in range(n_epochs):
-            print(e)
             action = self.act(state, is_training=True)
             next_state, reward, done, _ = self.env.step(action)
             score += reward.sum()
-            loss += self.reinforce(state, next_state, action, reward, done, batch_size)
-            state = next_state
+            loss += self.reinforce(state, next_state, action, reward, done)
+            loss += self.reinforce(*self.memory.random_access(batch_size))
+            self.memory.remember(state, next_state, action, reward, done)
             self.set_epsilon(self.epsilon * self.eps_decay if self.epsilon > self.eps_min else self.eps_min)
+            state = next_state
             if (e + 1) % constants.SAVE_FREQ == 0:
                 print("Epoch {:03d}/{:03d} | Epsilon {:.4f} | Loss {:3.4f} | Score {:04.2f}"
                         .format(e + 1, n_epochs, self.epsilon, loss, score))
@@ -66,9 +67,7 @@ class CNNAgent(BaselineAgent):
                 self.save()
                 score = loss = 0
 
-    def reinforce(self, state, next_state, action, reward, done, batch_size):
-        self.memory.remember(state, next_state, action, reward, done)
-        input_states, next_states, actions, rewards, dones = self.memory.random_access(batch_size)
+    def reinforce(self, state, next_state, action, reward, done):
         self.optimizer.zero_grad()
         input_q_values = self.model(input_states)
         next_q_values = self.model(next_states)

@@ -15,7 +15,6 @@ import constants
 class Memory(object):
     def __init__(self, max_memory=constants.MAX_MEMORY):
         self.max_memory = max_memory
-        self.cpu_device = constants.CPU_DEVICE
         self.gpu_device = constants.DEVICE
         self.states = torch.empty((0, constants.N_CHANNELS, constants.SIZE, constants.SIZE)).to(self.cpu_device)
         self.next_states = torch.empty((0, constants.N_CHANNELS, constants.SIZE, constants.SIZE)).to(self.cpu_device)

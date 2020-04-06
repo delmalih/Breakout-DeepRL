@@ -69,14 +69,11 @@ class Environment(object):
         self.scores = []
 
     def step(self, actions: torch.Tensor):
-        old_distances = self._compute_distance_to_food()
         self._update_direction(actions)
         self._update_head()
         done = self._check_collision().byte().float()
         eaten = self._check_food().byte().float()
-        new_distances = self._compute_distance_to_food()
-        delta_distances = new_distances - old_distances
-        reward = self._compute_reward(delta_distances, done, eaten)
+        reward = self._compute_reward(done, eaten)
         self.video.append(self.render())
         self.scores.append(reward.sum())
         return self.envs, reward, done, {}
@@ -121,16 +118,16 @@ class Environment(object):
             self._generate_food(env_id)
         return eaten
     
-    def _compute_distance_to_food(self):
-        head_coords = self.envs[:, constants.HEAD_CHANNEL, :, :].round().nonzero()
-        food_coords = self.envs[:, constants.FOOD_CHANNEL, :, :].round().nonzero()
-        distance = (head_coords - food_coords).abs().sum(-1)
-        return distance
+    # def _compute_distance_to_food(self):
+    #     head_coords = self.envs[:, constants.HEAD_CHANNEL, :, :].round().nonzero()
+    #     food_coords = self.envs[:, constants.FOOD_CHANNEL, :, :].round().nonzero()
+    #     distance = (head_coords - food_coords).abs().sum(-1)
+    #     return distance
     
     def _compute_reward(self, delta_distances, done, eaten):
         reward = torch.zeros((self.num_envs,)).to(self.device)
-        reward[delta_distances < 0] = +0.4
-        reward[delta_distances > 0] = -0.4
+        # reward[delta_distances < 0] = +0.4
+        # reward[delta_distances > 0] = -0.4
         reward[done == 1] = -1
         reward[eaten == 1] = +1
         return reward

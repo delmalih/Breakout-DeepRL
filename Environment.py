@@ -20,9 +20,7 @@ import constants
 
 
 class Environment(object):
-    def __init__(self,
-                 num_envs: int = constants.NUM_ENVS,
-                 size: int = constants.SIZE):
+    def __init__(self, num_envs=constants.NUM_ENVS, size=constants.SIZE):
         self.num_envs = num_envs
         self.size = size
         self.device = constants.DEVICE
@@ -37,110 +35,81 @@ class Environment(object):
     def _create_envs(self):
         # Init. envs
         self.envs = torch.zeros((self.num_envs, self.n_channels, self.size, self.size)).to(self.device)
-        self.directions = torch.zeros((self.num_envs, 2, 1)).to(self.device)
+        
+        # Init. head
+        head_coords = torch.cat((
+            torch.arange(0, self.num_envs).unsqueeze(1).to(self.device),
+            torch.randint(1, self.size - 2, size=(self.num_envs, 2)).to(self.device),
+        ), dim=-1).to(self.device)
+        self.envs[head_coords[:, 0], constants.HEAD_CHANNEL, head_coords[:, 1], head_coords[:, 2]] = 1
 
-        # Update envs
-        for k in range(self.num_envs):
-            self._generate_snake(k)
-            self._generate_food(k)
+        # Init. bonus malus
+        nb_bonus = nb_malus = int(constants.SIZE * constants.SIZE * constants.FILL_PERC / 2.)
+        for env_id in range(self.num_envs):
+            self._generate_bonus(env_id, nb_bonus)
+            self._generate_malus(env_id, nb_malus)
 
-    def _generate_snake(self, env_id):
-        # Init. variable
-        self.envs[env_id, constants.HEAD_CHANNEL] = torch.zeros((self.size, self.size)).to(self.device)
-        self.directions[env_id] = torch.zeros((2, 1)).to(self.device)
-
-        # Generate head of snake
-        head_coords = torch.randint(1, self.size - 2, size=(2,)).to(self.device)
-        self.envs[env_id, constants.HEAD_CHANNEL, head_coords[0], head_coords[1]] = 1
-
-        # Generate direction
-        self.directions[env_id, 0, 0] = -1
-
-    def _generate_food(self, env_id):
-        self.envs[env_id, constants.FOOD_CHANNEL] = torch.zeros((self.size, self.size)).to(self.device)
-        head = self.envs[env_id, constants.HEAD_CHANNEL, :, :]
-        possible_coords = (head == 0).nonzero()
-        chosen_id = torch.randint(possible_coords.size(0), size=(1,))[0]
-        chosen_coord = possible_coords[chosen_id]
-        self.envs[env_id, constants.FOOD_CHANNEL, chosen_coord[0], chosen_coord[1]] = 1
+    def _generate_bonus(self, env_id, nb):
+        chosen_coords = self._sample_possible_coords(env_id, nb)
+        self.envs[env_id, constants.BONUS_CHANNEL, chosen_coords[:, 0], chosen_coords[:, 1]] = 1
+    
+    def _generate_malus(self, env_id, nb):
+        chosen_coords = self._sample_possible_coords(env_id, nb)
+        self.envs[env_id, constants.MALUS_CHANNEL, chosen_coords[:, 0], chosen_coords[:, 1]] = 1
+    
+    def _sample_possible_coords(self, env_id, nb):
+        already_taken = self.envs[env_id, :, :, :].sum(0)
+        possible_coords = (already_taken == 0).nonzero().to(self.device)
+        chosen_idx = torch.randint(possible_coords.size(0), size=(nb, 1)).to(self.device)[:, 0]
+        chosen_coords = possible_coords[chosen_idx]
+        return chosen_coords
 
     def _reset_video(self):
         self.video = []
         self.scores = []
 
-    def step(self, actions: torch.Tensor):
-        self._update_direction(actions)
-        self._update_head()
-        done = self._check_collision().byte().float()
-        eaten = self._check_food().byte().float()
-        reward = self._compute_reward(done, eaten)
+    def step(self, actions):
+        self._update_head(actions)
+        reward = self._compute_reward_and_update()
+        done = torch.zeros((self.num_envs,)).to(self.device)
         self.video.append(self.render())
-        self.scores.append(reward.sum())
+        self.scores.append(reward.sum() if len(self.scores) == 0 else self.scores[-1] + reward.sum())
         return self.envs, reward, done, {}
-
-    def _update_direction(self, action: torch.Tensor):
-        rotation_angle = (action.to(self.device).float() - 1.) * math.pi / 2.
-        rotation_matrix = torch.zeros((self.num_envs, 2, 2)).to(self.device)
-        rotation_matrix[:, 0, 0] = torch.cos(rotation_angle).to(self.device)
-        rotation_matrix[:, 0, 1] = -torch.sin(rotation_angle).to(self.device)
-        rotation_matrix[:, 1, 0] = torch.sin(rotation_angle).to(self.device)
-        rotation_matrix[:, 1, 1] = torch.cos(rotation_angle).to(self.device)
-        self.directions = torch.matmul(rotation_matrix, self.directions).long().float()
-
-    def _update_head(self):
+    
+    def _update_head(self, action):
         conv_kernels = constants.CONV_FILTERS.to(self.device)
-        directions_idx = torch.zeros((self.num_envs,), dtype=torch.long).to(self.device)
-        directions_idx[(self.directions[:, 0, 0] == 0) & (self.directions[:, 1, 0] == -1)] = 0
-        directions_idx[(self.directions[:, 0, 0] == +1) & (self.directions[:, 1, 0] == 0)] = 1
-        directions_idx[(self.directions[:, 0, 0] == 0) & (self.directions[:, 1, 0] == +1)] = 2
-        directions_idx[(self.directions[:, 0, 0] == -1) & (self.directions[:, 1, 0] == 0)] = 3
-        directions_onehot = torch.zeros((self.num_envs, 4)).to(self.device)
-        directions_onehot.scatter_(1, directions_idx.unsqueeze(-1), 1)
-        head_envs = self.envs[:, constants.HEAD_CHANNEL:constants.HEAD_CHANNEL+1, :, :]
-        head_envs = F.conv2d(head_envs, conv_kernels, padding=1)
-        head_envs = torch.einsum('bchw,bc->bhw', [head_envs, directions_onehot])
-        head_envs = head_envs.long().float()
+        action_onehot = torch.zeros((self.num_envs, self.get_number_of_actions())).to(self.device)
+        action_onehot.scatter_(1, action.unsqueeze(-1), 1)
+        prev_head_envs = self.envs[:, constants.HEAD_CHANNEL:constants.HEAD_CHANNEL+1, :, :]
+        head_envs = F.conv2d(prev_head_envs, conv_kernels, padding=1)
+        head_envs = torch.einsum('bchw,bc->bhw', [head_envs, action_onehot]).long().float()
+        if head_envs.sum() == 0:
+            head_envs = prev_head_envs.squeeze(1)
         self.envs[:, constants.HEAD_CHANNEL, :, :] = head_envs
-
-    def _check_collision(self):
+    
+    def _compute_reward_and_update(self):
         head_envs = self.envs[:, constants.HEAD_CHANNEL, :, :]
-        collision = head_envs.view(self.num_envs, -1).sum(dim=-1) == 0
-        for env_id in collision.nonzero().view(-1):
-            self._generate_snake(env_id)
-            self._generate_food(env_id)
-        return collision
-    
-    def _check_food(self):
-        head_envs = self.envs[:, constants.HEAD_CHANNEL, :, :]
-        food_envs = self.envs[:, constants.FOOD_CHANNEL, :, :]
-        eaten = (head_envs * food_envs).view(self.num_envs, -1).sum(-1) > 0
-        for env_id in eaten.nonzero().view(-1):
-            self._generate_food(env_id)
-        return eaten
-    
-    # def _compute_distance_to_food(self):
-    #     head_coords = self.envs[:, constants.HEAD_CHANNEL, :, :].round().nonzero()
-    #     food_coords = self.envs[:, constants.FOOD_CHANNEL, :, :].round().nonzero()
-    #     distance = (head_coords - food_coords).abs().sum(-1)
-    #     return distance
-    
-    def _compute_reward(self, done, eaten):
+        bonus_envs = self.envs[:, constants.BONUS_CHANNEL, :, :]
+        malus_envs = self.envs[:, constants.MALUS_CHANNEL, :, :]
+        eaten_bonus = (head_envs * bonus_envs).nonzero()
+        eaten_malus = (head_envs * malus_envs).nonzero()
+        self.envs[eaten_bonus[:, 0], constants.BONUS_CHANNEL, eaten_bonus[:, 1], eaten_bonus[:, 2]] = 0.
+        self.envs[eaten_malus[:, 0], constants.MALUS_CHANNEL, eaten_malus[:, 1], eaten_malus[:, 2]] = 0.
+        for env_id in eaten_bonus[:, 0]: self._generate_bonus(env_id, 1)
+        for env_id in eaten_malus[:, 0]: self._generate_malus(env_id, 1)
         reward = torch.zeros((self.num_envs,)).to(self.device)
-        reward[done == 1] = -1
-        reward[eaten == 1] = +1
+        reward[eaten_bonus[:, 0]] = constants.BONUS_REWARD
+        reward[eaten_malus[:, 0]] = constants.MALUS_REWARD
         return reward
 
     def sample_action(self):
-        return torch.randint(3, size=(self.num_envs,))
+        return torch.randint(self.get_number_of_actions(), size=(self.num_envs,))
 
     def render(self):
-        frames = np.zeros((self.num_envs, self.size + 2, self.size + 2, 3))
-        frames[:, 1:-1, 1:-1, :self.n_channels] = self.envs.permute(0, 2, 3, 1).cpu().detach().numpy()
-        frames[:, 0, :, :] = 1.
-        frames[:, :, 0, :] = 1.
-        frames[:, -1, :, :] = 1.
-        frames[:, :, -1, :] = 1.
-        frames[frames > 0] = 1.
+        frames = np.ones((self.num_envs, self.size + 2, self.size + 2, 3))
+        frames[:, 1:-1, 1:-1, 0] = self.envs[:, constants.MALUS_CHANNEL, :, :].cpu().detach().numpy()
+        frames[:, 1:-1, 1:-1, 1] = self.envs[:, constants.BONUS_CHANNEL, :, :].cpu().detach().numpy()
+        frames[:, 1:-1, 1:-1, 2] = self.envs[:, constants.HEAD_CHANNEL, :, :].cpu().detach().numpy()
         final_frame_w = int(np.ceil(np.sqrt(self.num_envs)))
         final_frame_h = int(np.ceil(self.num_envs / final_frame_w))
         final_frame = np.zeros((final_frame_h * (self.size + 2), final_frame_w * (self.size + 2), 3))
@@ -169,4 +138,4 @@ class Environment(object):
         writer.close()
 
     def get_number_of_actions(self):
-        return 3
+        return 4

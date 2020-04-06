@@ -7,6 +7,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import constants
+
 
 #############
 # DQN Model #
@@ -17,7 +19,7 @@ class CNNModel(nn.Module):
     def __init__(self, n_actions: int):
         super(CNNModel, self).__init__()
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(2, 16, 3, padding=1),     # 16 x 16 x 16
+            nn.Conv2d(constants.N_CHANNELS, 16, 3, padding=1),     # 16 x 16 x 16
             nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.MaxPool2d(2),                    # 8 x 8 x 16

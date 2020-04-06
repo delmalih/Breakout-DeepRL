@@ -102,6 +102,7 @@ class Environment(object):
         head_envs = self.envs[:, constants.HEAD_CHANNEL:constants.HEAD_CHANNEL+1, :, :]
         head_envs = F.conv2d(head_envs, conv_kernels, padding=1)
         head_envs = torch.einsum('bchw,bc->bhw', [head_envs, directions_onehot])
+        head_envs = head_envs.long().float()
         self.envs[:, constants.HEAD_CHANNEL, :, :] = head_envs
 
     def _check_collision(self):

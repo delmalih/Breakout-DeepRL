@@ -69,11 +69,14 @@ class Environment(object):
         self.scores = []
 
     def step(self, actions: torch.Tensor):
+        old_distances = self._compute_distance_to_food()
         self._update_direction(actions)
         self._update_head()
         done = self._check_collision().byte().float()
         eaten = self._check_food().byte().float()
-        reward = (done * -1) + (eaten * +1)
+        new_distances = self._compute_distance_to_food()
+        delta_distances = new_distances - old_distances
+        reward = self._compute_reward(delta_distances, done, eaten)
         self.video.append(self.render())
         self.scores.append(reward.sum())
         return self.envs, reward, done, {}
@@ -113,6 +116,20 @@ class Environment(object):
         for env_id in eaten.nonzero().view(-1):
             self._generate_food(env_id)
         return eaten
+    
+    def _compute_distance_to_food(self):
+        head_coords = self.envs[:, constants.HEAD_CHANNEL, :, :].nonzero()
+        food_coords = self.envs[:, constants.FOOD_CHANNEL, :, :].nonzero()
+        distance = (head_coords - food_coords).abs().sum(-1)
+        return distance
+    
+    def _compute_reward(self, delta_distances, done, eaten):
+        reward = torch.zeros((self.num_envs,)).to(self.device)
+        reward[delta_distances < 0] = +0.1
+        reward[delta_distances > 0] = -0.1
+        reward[done == 1] = -1
+        reward[eaten == 1] = +1
+        return reward
 
     def sample_action(self):
         return torch.randint(3, size=(self.num_envs,))
@@ -146,7 +163,7 @@ class Environment(object):
             frame = cv2.resize(frame, (frame_size, frame_size), interpolation=cv2.INTER_NEAREST)
             frame_with_text = np.zeros((frame.shape[0] + 100, frame.shape[1], 3), dtype=np.uint8)
             frame_with_text[100:, :, :] = frame
-            cv2.putText(frame_with_text, "Score = {:04d}".format(int(self.scores[k])),
+            cv2.putText(frame_with_text, "Score = {:.1f}".format(self.scores[k]),
                         (int(0.5 * frame.shape[1] - 100), 75), font, 1, white_color, 2)
             for _ in range(constants.FRAME_REPEAT):
                 writer.writeFrame(frame_with_text)

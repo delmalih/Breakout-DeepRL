@@ -18,15 +18,19 @@ class CNNModel(nn.Module):
         super(CNNModel, self).__init__()
         self.conv_layers = nn.Sequential(
             nn.Conv2d(2, 16, 3, padding=1),     # 16 x 16 x 16
+            nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.MaxPool2d(2),                    # 8 x 8 x 16
             nn.Conv2d(16, 32, 3, padding=1),    # 8 x 8 x 32
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(2),                    # 4 x 4 x 32
             nn.Conv2d(32, 64, 3, padding=1),    # 4 x 4 x 64
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(2),                    # 2 x 2 x 64
             nn.Conv2d(64, 128, 3, padding=1),   # 2 x 2 x 128
+            nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.MaxPool2d(2),                    # 1 x 1 x 128
         )

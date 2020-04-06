@@ -1,4 +1,6 @@
 numpy
 torch
+opencv-python
+opencv-contrib-python
 scikit-video
 scikit-image

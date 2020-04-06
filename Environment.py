@@ -95,7 +95,7 @@ class Environment(object):
         conv_kernels[conv_directions[:, 0], 0, conv_directions[:, 1], conv_directions[:, 2]] = 1
         head_envs = self.envs[:, constants.HEAD_CHANNEL:constants.HEAD_CHANNEL+1, :, :]
         head_envs = F.conv2d(head_envs, conv_kernels, padding=1)
-        head_envs = torch.einsum('bchw,bc->bhw', [head_envs, torch.eye(self.num_envs)])
+        head_envs = torch.einsum('bchw,bc->bhw', [head_envs, torch.eye(self.num_envs).to(self.device)])
         self.envs[:, constants.HEAD_CHANNEL, :, :] = head_envs
 
     def _check_collision(self):

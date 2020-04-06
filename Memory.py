@@ -17,18 +17,18 @@ class Memory(object):
         self.max_memory = max_memory
         self.gpu_device = constants.DEVICE
         self.cpu_device = constants.CPU_DEVICE
-        self.states = torch.empty((0, constants.N_CHANNELS, constants.SIZE, constants.SIZE)).to(self.cpu_device)
-        self.next_states = torch.empty((0, constants.N_CHANNELS, constants.SIZE, constants.SIZE)).to(self.cpu_device)
-        self.actions = torch.empty((0,), dtype=torch.long).to(self.cpu_device)
-        self.rewards = torch.Tensor((0,)).to(self.cpu_device)
-        self.dones = torch.Tensor((0,)).to(self.cpu_device)
+        self.states = torch.empty((0, constants.N_CHANNELS, constants.SIZE, constants.SIZE)).to(self.gpu_device)
+        self.next_states = torch.empty((0, constants.N_CHANNELS, constants.SIZE, constants.SIZE)).to(self.gpu_device)
+        self.actions = torch.empty((0,), dtype=torch.long).to(self.gpu_device)
+        self.rewards = torch.Tensor((0,)).to(self.gpu_device)
+        self.dones = torch.Tensor((0,)).to(self.gpu_device)
 
     def remember(self, state, next_state, action, reward, done):
-        self.states = torch.cat((self.states, state.to(self.cpu_device)), dim=0)
-        self.next_states = torch.cat((self.next_states, next_state.to(self.cpu_device)), dim=0)
-        self.actions = torch.cat((self.actions, action.to(self.cpu_device)), dim=0)
-        self.rewards = torch.cat((self.rewards, reward.to(self.cpu_device)), dim=0)
-        self.dones = torch.cat((self.dones, done.to(self.cpu_device)), dim=0)
+        self.states = torch.cat((self.states, state.to(self.gpu_device)), dim=0)
+        self.next_states = torch.cat((self.next_states, next_state.to(self.gpu_device)), dim=0)
+        self.actions = torch.cat((self.actions, action.to(self.gpu_device)), dim=0)
+        self.rewards = torch.cat((self.rewards, reward.to(self.gpu_device)), dim=0)
+        self.dones = torch.cat((self.dones, done.to(self.gpu_device)), dim=0)
         if self.states.size(0) > self.max_memory:
             excedent = self.states.size(0) - self.max_memory
             self.states = self.states[excedent:]

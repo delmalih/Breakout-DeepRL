@@ -51,6 +51,7 @@ class CNNAgent(BaselineAgent):
         state = self.env.reset()
         score = loss = 0
         for e in range(n_epochs):
+            print(e)
             action = self.act(state, is_training=True)
             next_state, reward, done, _ = self.env.step(action)
             score += reward.sum()

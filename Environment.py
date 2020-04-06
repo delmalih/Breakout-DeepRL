@@ -124,7 +124,6 @@ class Environment(object):
     def _compute_distance_to_food(self):
         head_coords = self.envs[:, constants.HEAD_CHANNEL, :, :].round().nonzero()
         food_coords = self.envs[:, constants.FOOD_CHANNEL, :, :].round().nonzero()
-        print(head_coords.shape, food_coords.shape)
         distance = (head_coords - food_coords).abs().sum(-1)
         return distance
     

@@ -69,7 +69,7 @@ class CNNAgent(BaselineAgent):
         self.optimizer.zero_grad()
         with torch.no_grad():
             next_q_values = self.model(next_state)
-        target_q = torch.zeros(input_q_values.shape).to(self.device)
+        target_q = torch.zeros((self.env.num_envs, self.env.get_number_of_actions())).to(self.device)
         target_q[done == 1, action[done == 1]] = reward[done == 1]
         target_q[done == 0, action[done == 0]] = (reward + torch.max(next_q_values, dim=-1)[0])[done == 0]
         loss = torch.mean(torch.pow(self.model(state) - target_q, 2))

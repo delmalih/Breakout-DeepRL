@@ -44,7 +44,6 @@ class CNNAgent(BaselineAgent):
         with torch.no_grad():
             q_values = self.model(state)
             action = torch.argmax(q_values, dim=-1)
-        print(action)
         return action
 
     def train(self, n_epochs, batch_size, output_path="./tmp"):

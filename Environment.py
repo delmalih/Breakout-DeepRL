@@ -95,7 +95,7 @@ class Environment(object):
         conv_directions[:, 0] = torch.arange(0, self.num_envs, 1, dtype=torch.long).to(self.device)
         conv_directions[:, 1:] = (self.directions.long() + 1).view(self.num_envs, 2)
         conv_kernels = torch.zeros((self.num_envs, 1, 3, 3)).to(self.device)
-        conv_kernels[conv_directions[:, 0], 0, conv_directions[:, 1], conv_directions[:, 2]] = 1
+        conv_kernels[conv_directions[:, 0], 0, conv_directions[:, 1], conv_directions[:, 2]] = 1.
         head_envs = self.envs[:, constants.HEAD_CHANNEL:constants.HEAD_CHANNEL+1, :, :]
         head_envs = F.conv2d(head_envs, conv_kernels, padding=1)
         head_envs = torch.einsum('bchw,bc->bhw', [head_envs, torch.eye(self.num_envs).to(self.device)])
@@ -118,6 +118,7 @@ class Environment(object):
         return eaten
     
     def _compute_distance_to_food(self):
+        print(self.envs[:, constants.HEAD_CHANNEL, :, :].sum())
         head_coords = (self.envs[:, constants.HEAD_CHANNEL, :, :] > constants.EPS).nonzero()
         food_coords = (self.envs[:, constants.FOOD_CHANNEL, :, :] > constants.EPS).nonzero()
         print(self.envs[head_coords[:, 0], constants.HEAD_CHANNEL, head_coords[:, 1], head_coords[:, 2]])

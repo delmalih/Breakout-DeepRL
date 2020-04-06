@@ -53,7 +53,6 @@ class CNNAgent(BaselineAgent):
     def train(self, n_epochs, batch_size, output_path="./tmp"):
         state = self.env.reset()
         score = loss = 0
-        print(n_epochs)
         for e in range(n_epochs):
             action = self.act(state, is_training=True)
             next_state, reward, done, _ = self.env.step(action)

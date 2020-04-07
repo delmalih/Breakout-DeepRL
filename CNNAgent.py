@@ -70,8 +70,10 @@ class CNNAgent(BaselineAgent):
         input_q_values = self.model(state)
         next_q_values = self.model(next_state)
         target_q = input_q_values.clone()
-        target_q[done == 1, action[done == 1]] = reward[done == 1]
-        target_q[done == 0, action[done == 0]] = reward[done == 0] + torch.max(next_q_values[done == 0], dim=-1)[0]
+        for k in range(len(done)):
+            target_q[k, action[k]] = reward[k]
+            if not done[k]:
+                target_q[k, action[k]] += constants.DISCOUNT * next_q_values[k].max()
         loss = torch.mean(torch.pow(input_q_values - target_q, 2))
         loss.backward()
         self.optimizer.step()

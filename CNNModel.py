@@ -19,18 +19,18 @@ class CNNModel(nn.Module):
     def __init__(self, n_actions):
         super(CNNModel, self).__init__()
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(constants.N_CHANNELS, 16, 3, padding=1),
-            nn.LeakyReLU(0.1),
-            nn.Conv2d(16, 16, 3, padding=1),
-            nn.LeakyReLU(0.1),
-            nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, 3, padding=1),
+            nn.Conv2d(constants.N_CHANNELS, 32, 3, padding=1),
             nn.LeakyReLU(0.1),
             nn.Conv2d(32, 32, 3, padding=1),
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.LeakyReLU(0.1),
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.LeakyReLU(0.1),
+            nn.MaxPool2d(2),
         )
-        self.q_values_head = nn.Linear(32, n_actions)
+        self.q_values_head = nn.Linear(64, n_actions)
 
     def forward(self, x: torch.Tensor):
         x = self.conv_layers(x)

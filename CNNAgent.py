@@ -38,7 +38,7 @@ class CNNAgent(BaselineAgent):
         self.load()
         self.model.to(self.device)
         if self.is_training:
-            self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+            self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=0, weight_decay=1e-4)
 
     def learned_act(self, state):
         with torch.no_grad():

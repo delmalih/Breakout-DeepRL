@@ -43,6 +43,7 @@ class CNNAgent(BaselineAgent):
     def learned_act(self, state):
         with torch.no_grad():
             q_values = self.model(state.unsqueeze(0))
+            print(F.softmax(q_values))
             action = torch.argmax(q_values, dim=-1)[0]
         return action
 

@@ -42,28 +42,28 @@ class CNNAgent(BaselineAgent):
 
     def learned_act(self, state):
         with torch.no_grad():
-            q_values = self.model(state)
-            action = torch.argmax(q_values, dim=-1)
+            q_values = self.model(state.unsqueeze(0))
+            action = torch.argmax(q_values, dim=-1)[0]
         return action
 
     def train(self, n_epochs, batch_size, output_path="./tmp"):
-        state = self.env.reset()
-        score = loss = 0
         for e in range(n_epochs):
-            action = self.act(state, is_training=True)
-            next_state, reward, done, _ = self.env.step(action)
-            score += reward.sum()
-            self.memory.remember(state, next_state, action, reward, done)
-            loss += self.reinforce(*self.memory.random_access(batch_size))
+            score = loss = 0
+            state = self.env.reset()
+            done = False
+            while not done:
+                action = self.act(state, is_training=True)
+                next_state, reward, done, _ = self.env.step(action)
+                score += reward
+                self.memory.remember(state, next_state, action, reward, done)
+                loss += self.reinforce(*self.memory.random_access(batch_size))
+                state = next_state
             self.set_epsilon(self.epsilon * self.eps_decay if self.epsilon > self.eps_min else self.eps_min)
-            state = next_state
             if (e + 1) % constants.SAVE_FREQ == 0:
                 print("Epoch {:03d}/{:03d} | Epsilon {:.4f} | Loss {:3.4f} | Score {:04.2f}"
                         .format(e + 1, n_epochs, self.epsilon, loss / constants.SAVE_FREQ, score / constants.SAVE_FREQ))
                 self.env.draw_video(output_path + "/" + str(e + 1))
                 self.save()
-                self.env._reset_video()
-                score = loss = 0
 
     def reinforce(self, state, next_state, action, reward, done):
         self.optimizer.zero_grad()

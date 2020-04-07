@@ -29,11 +29,13 @@ class BaselineAgent(object):
         return a
 
     def play(self, epochs, output_path=''):
-        state = self.env.reset()
         for e in tqdm(range(epochs)):
-            action = self.act(state)
-            state, _, _, _ = self.env.step(action)
-        self.env.draw_video(output_path + "/" + str(e))
+            state = self.env.reset()
+            done = False
+            while not done:
+                action = self.act(state)
+                state, _, done, _ = self.env.step(action)
+            self.env.draw_video(output_path + "/" + str(e))
 
     def learned_act(self, state):
         pass

@@ -10,54 +10,38 @@ OUTPUT_FOLDER = './tmp'
 
 # GAME CONSTANTS
 SIZE = 16
-NUM_ENVS = 400
 N_CHANNELS = 3
 HEAD_CHANNEL = 0
 BONUS_CHANNEL = 1
 MALUS_CHANNEL = 2
-BONUS_REWARD = +0.1
-MALUS_REWARD = -0.1
-COLLISION_REWARD = -1
-FILL_PERC = .4
+BONUS_REWARD = +0.5
+MALUS_REWARD = -1.0
+FILL_PERC = .5
+SIGHT = 2
+MAX_TIME = 100
+ACTIONS_TO_VECT = torch.tensor([
+    [-1, 0],
+    [+1, 0],
+    [0, -1],
+    [0, +1],
+]).to(DEVICE)
 
 
 # RANDOM AGENT
-N_RANDOM_PLAYS = 100
+N_RANDOM_PLAYS = 10
 
 
 # CNN AGENT
-N_EPOCHS = 1000000
-SAVE_FREQ = 500
-BATCH_SIZE = 512
+N_EPOCHS = 10000
+SAVE_FREQ = 1
+BATCH_SIZE = 128
 MODEL_PATH = "./tmp/model.pth"
-MAX_MEMORY = 500000
+MAX_MEMORY = 100000
 DISCOUNT = .99
 EPS_START = .99
-EPS_MIN = .01
+EPS_MIN = .05
 EPS_DECAY = .9999
 LEARNING_RATE = 1e-3
-CONV_FILTERS = torch.tensor([
-    [
-        [0, 1, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-    ],
-    [
-        [0, 0, 0],
-        [0, 0, 1],
-        [0, 0, 0],
-    ],
-    [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 1, 0],
-    ],
-    [
-        [0, 0, 0],
-        [1, 0, 0],
-        [0, 0, 0],
-    ],
-]).unsqueeze(1).float()
 
 
 # DISPLAY

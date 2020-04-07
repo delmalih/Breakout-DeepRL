@@ -14,20 +14,24 @@ import constants
 
 class Memory(object):
     def __init__(self, max_memory=constants.MAX_MEMORY):
+        state_size = 2 * constants.SIGHT + 1
         self.max_memory = max_memory
         self.device = constants.DEVICE
-        self.states = torch.empty((0, constants.N_CHANNELS, constants.SIZE, constants.SIZE)).to(self.device)
-        self.next_states = torch.empty((0, constants.N_CHANNELS, constants.SIZE, constants.SIZE)).to(self.device)
+        self.states = torch.empty((0, constants.N_CHANNELS, state_size, state_size)).to(self.device)
+        self.next_states = torch.empty((0, constants.N_CHANNELS, state_size, state_size)).to(self.device)
         self.actions = torch.empty((0,), dtype=torch.long).to(self.device)
         self.rewards = torch.Tensor((0,)).to(self.device)
         self.dones = torch.Tensor((0,)).to(self.device)
 
     def remember(self, state, next_state, action, reward, done):
-        self.states = torch.cat((self.states, state.to(self.device).long().float()), dim=0)
-        self.next_states = torch.cat((self.next_states, next_state.to(self.device).long().float()), dim=0)
-        self.actions = torch.cat((self.actions, action.to(self.device)), dim=0)
-        self.rewards = torch.cat((self.rewards, reward.to(self.device)), dim=0)
-        self.dones = torch.cat((self.dones, done.to(self.device)), dim=0)
+        state, next_state, action, reward, done = list(map(lambda x: torch.tensor(x).to(self.device).unsqueeze(0), [state, next_state, action, reward, done]))
+        action = action.long()
+        done = done.float()
+        self.states = torch.cat((self.states, state), dim=0)
+        self.next_states = torch.cat((self.next_states, next_state), dim=0)
+        self.actions = torch.cat((self.actions, action), dim=0)
+        self.rewards = torch.cat((self.rewards, reward), dim=0)
+        self.dones = torch.cat((self.dones, done), dim=0)
         if self.states.size(0) > self.max_memory:
             excedent = self.states.size(0) - self.max_memory
             self.states = self.states[excedent:]

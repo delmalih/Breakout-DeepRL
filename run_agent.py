@@ -2,6 +2,7 @@
 # Imports #
 ###########
 
+
 import argparse
 
 from Environment import Environment
@@ -13,6 +14,7 @@ import constants
 #############
 # Functions #
 #############
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Arguments for running agents")
@@ -38,6 +40,6 @@ if __name__ == "__main__":
     env = Environment()
     agent = get_agent(args, env)
     if args.train:
-        agent.train(constants.N_EPOCHS, constants.BATCH_SIZE, constants.OUTPUT_FOLDER)
+        agent.train()
     else:
-        agent.play(constants.N_RANDOM_PLAYS, constants.OUTPUT_FOLDER)
+        agent.play(constants.N_RANDOM_PLAYS)

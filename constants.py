@@ -10,7 +10,7 @@ OUTPUT_FOLDER = './tmp'
 
 
 # GAME CONSTANTS
-SIZE = 8
+SIZE = 6
 INIT_LENGTH = 3
 ACTIONS_TO_HEADINGS = np.array([
     [+1, 0],

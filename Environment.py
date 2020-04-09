@@ -32,7 +32,7 @@ class Environment(gym.Env):
 
     def reset(self):
         self.heading = np.array([1, 0])
-        self.snake_coords = [np.random.randint(1, self.grid_size-2, size=2)]
+        self.snake_coords = [np.array([self.grid_size // 2, self.grid_size // 2])]
         for _ in range(self.init_length - 1):
             self._add_snake_cell()
         self._generate_apple()
@@ -43,11 +43,9 @@ class Environment(gym.Env):
         new_heading = constants.ACTIONS_TO_HEADINGS[action]
         if (self.heading + new_heading != 0).any():
             self.heading = new_heading
-        old_dist = self._compute_snake_apple_dist()
         done = self._update_snake()
-        delta_dist = self._compute_snake_apple_dist() - old_dist
         eaten = self._update_apple()
-        reward = self._compute_reward(done, eaten, delta_dist)
+        reward = self._compute_reward(done, eaten)
         if eaten:
             done = done or self._add_snake_cell()
         return self._get_rgb_screen(), reward, done, {}
@@ -125,16 +123,9 @@ class Environment(gym.Env):
         self.snake_coords.append(new_cell_coords)
         return False
 
-    def _compute_snake_apple_dist(self):
-        return np.abs(self.snake_coords[0] - self.apple_coords).sum()
-
-    def _compute_reward(self, done, eaten, delta_dist):
+    def _compute_reward(self, done, eaten):
         if done:
             return -1.
         if eaten:
             return +1.
-        if delta_dist > 0:
-            return -.1
-        if delta_dist < 0:
-            return +.1
-        return 0.
+        return -.01

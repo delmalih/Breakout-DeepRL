@@ -1,6 +1,6 @@
 # Snake-DeepRL
 
-![game]("./images/game.png")
+![game]("https://github.com/delmalih/Snake-DeepRL/blob/master/images/game.png?raw=true")
 
 ### Requirements
 
@@ -23,7 +23,7 @@ python3 run_agent.py -a Random
 python3 run_agent.py -a CNN --train
 ```
 
-![game]("./images/training.png")
+![game]("https://github.com/delmalih/Snake-DeepRL/blob/master/images/training.png?raw=true")
 
 ##### Run a CNN agent (with the pretrained model in `<OUTPUT_PATH>/model.pth`) :
 

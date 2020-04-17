@@ -3,6 +3,7 @@
 ###########
 
 
+import os
 import argparse
 
 from Environment import Environment
@@ -36,6 +37,8 @@ def get_agent(args, env):
 ########
 
 if __name__ == "__main__":
+    if not os.path.exists(OUTPUT_FOLDER):
+        os.makedirs(OUTPUT_FOLDER)
     args = parse_args()
     env = Environment()
     agent = get_agent(args, env)

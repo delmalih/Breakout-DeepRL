@@ -4,6 +4,7 @@
 
 import os
 import numpy as np
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 from collections import namedtuple
 
@@ -74,7 +75,7 @@ class CNNAgent(BaselineAgent):
                 # Render env
                 self.env.render()
 
-                # Select and perform act
+                # Select and perform action
                 action = self.act(state, is_training=True)
                 _, reward, done, _ = self.env.step(action)
                 score += reward
@@ -115,6 +116,28 @@ class CNNAgent(BaselineAgent):
             if (e + 1) % constants.SAVE_FREQ == 0:
                 self.target_model.load_state_dict(self.model.state_dict())
                 self.save()
+
+    def play(self, epochs):
+        for e in tqdm(range(epochs)):
+            
+            self.env.reset()
+            last_screen = self.state2tensor(self.env._get_rgb_screen())
+            curr_screen = self.state2tensor(self.env._get_rgb_screen())
+            state = torch.cat((last_screen, curr_screen), dim=1)
+            done = False
+            
+            while not done:
+                # Render env
+                self.env.render()
+
+                # Select and perform action
+                action = self.act(state)
+                _, _, done, _ = self.env.step(action)
+                
+                # Update state
+                last_screen = curr_screen
+                curr_screen = self.state2tensor(self.env._get_rgb_screen())
+                state = torch.cat((last_screen, curr_screen), dim=1)
 
     def reinforce(self, batch_size=constants.BATCH_SIZE):
         if len(self.memory) < batch_size:

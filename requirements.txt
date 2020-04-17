@@ -1,6 +1,7 @@
+gym
+tqdm
 numpy
 torch
+matplotlib
 opencv-python
 opencv-contrib-python
-scikit-video
-scikit-image

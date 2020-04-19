@@ -1,6 +1,7 @@
 # Snake-DeepRL
 
 Course project of the Reinforcement Learning course taught by Dr. Matthieu J.
+
 Team Members - [David El Malih](https://github.com/delmalih) and [Sai Deepesh Pokala](https://github.com/saideepesh)
 
 ![game](https://i.imgur.com/h3bJeXT.png)
